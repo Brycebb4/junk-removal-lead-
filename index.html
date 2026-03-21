@@ -809,10 +809,10 @@
         }
     }
 
-   async function performWebSearch(query) {
-    const fullArea = "Oxford Ohio, Miami University area, Harrison, Ross, Shandon, Okeana, Collinsville, Darrtown, Somerville, Jacksonburg, Astoria, West Elkton, Morning Sun, Lawrenceburg Indiana, Guilford, Wrights Corner, Wilmington, Petersburg, Greendale, Hidden Valley, New Haven, Rumpke, Cleves, North Bend, Addyston";
+  async function performWebSearch(query) {
+    const fullArea = "Oxford Ohio, Miami University area, Harrison, Ross, Shandon, Okeana, Collinsville, Darrtown, Somerville, Jacksonburg, Astoria, West Elkton, Morning Sun, Lawrenceburg Indiana, Guilford, Wrights Corner, Wilmington, Petersburg, Greendale, Hidden Valley, New Haven";
 
-    const response = await fetch('/.netlify/functions/search-leads', {
+    const response = await fetch('/api/search-leads', {   // ← Changed to Render path
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -825,7 +825,7 @@
     return await response.json();
 }
    async function extractLeadsFromResults(searchData, query) {
-    const response = await fetch('/.netlify/functions/search-leads', {   // or /api/search-leads on Render
+    const response = await fetch('/api/search-leads', {   // ← Changed to Render path
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -852,7 +852,6 @@
     const data = await response.json();
     let text = data.content?.[0]?.text || data.content?.[0]?.message?.content || '[]';
 
-    // Safety cleanup for Groq response
     text = text.replace(/```json|```/g, '').trim();
 
     try {
