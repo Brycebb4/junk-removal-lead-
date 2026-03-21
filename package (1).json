@@ -1,0 +1,7 @@
+{
+  "name": "removal-leads",
+  "version": "1.0.0",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.33.1"
+  }
+}
