@@ -22,8 +22,9 @@
         .metric { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
         .metric-value { font-size: 1.5em; font-weight: 700; color: #2c3e50; }
         .btn { padding: 14px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
-        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #3498db; border-radius: 8px; cursor: pointer; }
+        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #3498db; border-radius: 8px; cursor: pointer; position: relative; }
         .lead-item:hover { background: #e3f2fd; }
+        .lead-badge { position: absolute; right: 12px; top: 12px; font-size: 1.1em; }
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
@@ -57,30 +58,54 @@
             <p><strong>Phone:</strong> <a id="modalPhone" href="#"></a></p>
             <p><strong>Email:</strong> <a id="modalEmail" href="#"></a></p>
             <p><strong>Source:</strong> <span id="modalSource"></span></p>
-            <button onclick="closeModal()" style="margin-top:15px;padding:10px 20px;">Close</button>
+            <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;color:#28a745;">New</span></p>
+            <button id="contactBtn" style="margin:15px 0;padding:12px 24px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;width:100%;">Mark as Contacted</button>
+            <button onclick="closeModal()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;">Close</button>
         </div>
     </div>
 
     <script>
-        // ================== AGENT DATA (isolated per agent) ==================
         let agents = {
-            realEstate: { name: "Real Estate Monitor", icon: "🏠", query: "Ohio Dayton Kentucky Southern Indiana real estate listings junk removal needed", scans: 0, leads: 0, hot: 0, leadsList: [] },
-            socialMedia: { name: "Social Media Scanner", icon: "📱", query: "facebook reddit posts junk removal help Ohio Dayton Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
-            marketplace: { name: "Marketplace Hunter", icon: "🛒", query: "craigslist facebook marketplace junk removal Dayton Ohio Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
-            eventSeason: { name: "Event & Season Tracker", icon: "📅", query: "seasonal events spring cleaning moving junk removal Ohio Dayton Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
-            craigslist: { name: "Craigslist Scanner", icon: "📰", query: "craigslist local listings junk removal needed Dayton Ohio", scans: 0, leads: 0, hot: 0, leadsList: [] }
+            realEstate: { name: "Real Estate Monitor", icon: "🏠", query: "(\"need junk removed\" OR \"junk haul away\" OR \"need haul\" OR \"remove my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\") (\"Ohio\" OR \"Dayton\" OR \"Cincinnati\" OR \"Kentucky\" OR \"Lexington\" OR \"Louisville\" OR \"southern Indiana\") (foreclosure OR moving OR \"new home\" OR \"estate sale\") -\"we offer\" -service -company -business -quote -pricing -\"call us\"", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            socialMedia: { name: "Social Media Scanner", icon: "📱", query: "(\"looking for junk removal\" OR \"need junk hauled\" OR \"recommend junk hauler\" OR \"someone to remove my junk\" OR \"haul my trash\" OR \"junk removal needed\") (\"Ohio\" OR \"Dayton\" OR \"Kentucky\" OR \"southern Indiana\" OR \"Cincinnati\" OR \"Columbus\") (facebook.com OR reddit.com OR group) -offer -service -business -\"we haul\" -\"junk removal service\"", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            marketplace: { name: "Marketplace Hunter", icon: "🛒", query: "(\"junk removal needed\" OR \"need junk removed\" OR \"haul away\" OR \"remove junk\" OR \"trash removal\" OR \"scrap haul needed\") (\"Ohio\" OR \"Dayton\" OR \"Kentucky\" OR \"southern Indiana\") (craigslist.org OR facebook.com/marketplace OR \"for sale\" OR wanted) -offer -service -\"we provide\" -business -pricing", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            eventSeason: { name: "Event & Season Tracker", icon: "📅", query: "(\"spring cleaning\" OR moving OR \"estate sale\" OR \"garage cleanout\" OR \"junk removal needed\" OR \"need haul away\") (\"Ohio\" OR \"Dayton\" OR \"Kentucky\" OR \"Indiana\") -offer -service -company -\"junk removal service\"", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            craigslist: { name: "Craigslist Scanner", icon: "📰", query: "(\"need junk removed\" OR \"junk haul\" OR \"remove my junk\" OR \"trash hauled\" OR \"scrap removal needed\") (dayton OR cincinnati OR \"southern ohio\" OR kentucky OR \"louisville ky\") site:craigslist.org -offer -services -\"junk removal company\"", scans: 0, leads: 0, hot: 0, leadsList: [] }
         };
 
-        // Load from localStorage
+        let currentLeadId = null;
+
+        // Load + migrate old data
         function loadData() {
             const saved = localStorage.getItem('junkLeadsData');
-            if (saved) agents = JSON.parse(saved);
+            if (saved) {
+                agents = JSON.parse(saved);
+                // Migrate old leads to new structure
+                Object.values(agents).forEach(agent => {
+                    agent.leadsList.forEach((lead, i) => {
+                        if (!lead.id) lead.id = `lead-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`;
+                        if (lead.contacted === undefined) lead.contacted = false;
+                        if (!lead.createdAt) lead.createdAt = Date.now() - (agent.leadsList.length - i) * 86400000;
+                    });
+                });
+            }
         }
+
         function saveData() {
             localStorage.setItem('junkLeadsData', JSON.stringify(agents));
         }
 
-        // Render all agent cards
+        function getSortedLeads(key) {
+            return [...agents[key].leadsList].sort((a, b) => {
+                // 1. Hot first
+                if (a.hot !== b.hot) return b.hot ? 1 : -1;
+                // 2. New (not contacted) before contacted
+                if (a.contacted !== b.contacted) return a.contacted ? 1 : -1;
+                // 3. Newest first
+                return b.createdAt - a.createdAt;
+            });
+        }
+
         function renderAgents() {
             const grid = document.getElementById('agentsGrid');
             grid.innerHTML = '';
@@ -106,8 +131,26 @@
             });
         }
 
+        function renderLeadsForAgent(key) {
+            const section = document.getElementById(`${key}-leads-section`);
+            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
+            const sorted = getSortedLeads(key);
+            sorted.forEach(lead => {
+                const div = document.createElement('div');
+                div.className = 'lead-item';
+                const badges = (lead.hot ? '🔥 ' : '') + (lead.contacted ? '✅ ' : '');
+                div.innerHTML = `
+                    ${badges}<strong>${lead.name}</strong> – ${lead.description.substring(0,80)}${lead.description.length > 80 ? '...' : ''}
+                `;
+                div.onclick = () => showLeadModal(lead);
+                section.appendChild(div);
+            });
+        }
+
         function updateAgentUI(key) {
             const a = agents[key];
+            a.leads = a.leadsList.length;
+            a.hot = a.leadsList.filter(l => l.hot).length;
             document.getElementById(`${key}-scans`).textContent = a.scans;
             document.getElementById(`${key}-leads`).textContent = a.leads;
             document.getElementById(`${key}-hot`).textContent = a.hot;
@@ -121,7 +164,6 @@
             document.getElementById('hotLeads').textContent = hot;
         }
 
-        // ================== SCAN LOGIC (real API + forced contacts) ==================
         async function scanAgent(key) {
             const btn = event.target;
             const originalText = btn.textContent;
@@ -129,7 +171,6 @@
             btn.textContent = 'Scanning...';
 
             try {
-                // 1. Tavily search
                 const searchRes = await fetch('/search-lead', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -137,44 +178,62 @@
                 });
                 const searchData = await searchRes.json();
 
-                // 2. Groq extract WITH CONTACT FIELDS
-                const prompt = `Extract up to 8 junk removal leads from this data: ${JSON.stringify(searchData.content)}. 
-                Return ONLY a valid JSON array. Each object MUST include: 
-                name, phone (or "N/A"), email (or "N/A"), address, description, source (URL/platform), hot (true if urgent/high-value). 
-                Make data realistic for Ohio/Dayton/Kentucky area.`;
-                
+                const prompt = `From the provided search results, extract ONLY genuine customer leads where someone is **asking for junk removal / hauling / scrap removal help** (homeowners, renters, etc.). Ignore any posts from companies offering services.
+Extract up to 6 leads as a valid JSON array of objects. Each object MUST have:
+- name: person's name or "Anonymous" if not given
+- phone: number or "N/A"
+- email: email or "N/A"
+- address: full or partial address or "N/A"
+- description: short summary of what they need removed / situation
+- source: full URL or platform + post title/snippet
+- hot: true if sounds urgent (same-day, large volume, moving soon, etc.), false otherwise
+
+Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ONLY the JSON array, no other text. Data: ${JSON.stringify(searchData.content)}`;
+
                 const extractRes = await fetch('/search-lead', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ 
-                        action: 'extract', 
-                        data: { messages: [{ role: "user", content: prompt }] } 
-                    })
+                    body: JSON.stringify({ action: 'extract', data: { messages: [{ role: "user", content: prompt }] } })
                 });
                 const extractData = await extractRes.json();
-                
-                let newLeads = [];
-                try {
-                    newLeads = JSON.parse(extractData.content[0].text);
-                } catch(e) {
-                    console.error("JSON parse failed, using empty");
-                }
 
-                // Add to this agent only
+                let newLeads = [];
+                try { newLeads = JSON.parse(extractData.content[0].text); } catch(e) { newLeads = []; }
+
+                // Promotional filter
+                newLeads = newLeads.filter(lead => {
+                    const text = (lead.description + lead.source).toLowerCase();
+                    return !text.includes('we offer') && !text.includes('junk removal service') &&
+                           !text.includes('call us') && !text.includes('our company') &&
+                           !text.match(/\$|\d+[\.,]?\d*\s*(per|ton|load|hour)/);
+                });
+
+                // GLOBAL DEDUPLICATION
+                const existingKeys = new Set();
+                Object.values(agents).forEach(a => {
+                    a.leadsList.forEach(l => existingKeys.add(`${l.description.toLowerCase()}|${l.source.toLowerCase()}`));
+                });
+                newLeads = newLeads.filter(lead => {
+                    const key = `${lead.description.toLowerCase()}|${lead.source.toLowerCase()}`;
+                    return !existingKeys.has(key);
+                });
+
+                // Add metadata
                 newLeads.forEach(lead => {
+                    lead.id = `lead-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                    lead.contacted = false;
+                    lead.createdAt = Date.now();
                     lead.agent = key;
                     lead.hot = !!lead.hot;
                 });
-                agents[key].leadsList = [...agents[key].leadsList, ...newLeads.slice(0,8)];
-                agents[key].scans++;
-                agents[key].leads = agents[key].leadsList.length;
-                agents[key].hot = agents[key].leadsList.filter(l => l.hot).length;
+
+                agents[key].leadsList = [...agents[key].leadsList, ...newLeads];
 
                 saveData();
                 updateAgentUI(key);
                 updateGlobalSummary();
             } catch(e) {
-                alert("Scan failed – check your API keys on Render or try again.");
+                alert("Scan failed – check your backend API keys or network.");
                 console.error(e);
             }
 
@@ -182,39 +241,56 @@
             btn.textContent = originalText;
         }
 
-        function renderLeadsForAgent(key) {
-            const section = document.getElementById(`${key}-leads-section`);
-            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
-            agents[key].leadsList.forEach((lead, i) => {
-                const div = document.createElement('div');
-                div.className = 'lead-item';
-                div.innerHTML = `<strong>${lead.name}</strong> – ${lead.description.substring(0,80)}...`;
-                div.onclick = () => showLeadModal(lead);
-                section.appendChild(div);
-            });
-        }
-
         function showLeadModal(lead) {
+            currentLeadId = lead.id;
             document.getElementById('modalName').textContent = lead.name;
             document.getElementById('modalDesc').textContent = lead.description;
             document.getElementById('modalAddress').textContent = lead.address;
-            const phoneEl = document.getElementById('modalPhone');
-            phoneEl.textContent = lead.phone;
-            phoneEl.href = lead.phone !== "N/A" ? `tel:${lead.phone}` : "#";
-            const emailEl = document.getElementById('modalEmail');
-            emailEl.textContent = lead.email;
-            emailEl.href = lead.email !== "N/A" ? `mailto:${lead.email}` : "#";
+            document.getElementById('modalPhone').textContent = lead.phone;
+            document.getElementById('modalPhone').href = lead.phone !== "N/A" ? `tel:${lead.phone}` : "#";
+            document.getElementById('modalEmail').textContent = lead.email;
+            document.getElementById('modalEmail').href = lead.email !== "N/A" ? `mailto:${lead.email}` : "#";
             document.getElementById('modalSource').textContent = lead.source;
+            document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
+            document.getElementById('modalStatus').style.color = lead.contacted ? '#dc3545' : '#28a745';
+            document.getElementById('contactBtn').textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
             document.getElementById('leadModal').classList.add('active');
         }
+
+        function toggleContacted() {
+            if (!currentLeadId) return;
+            let updatedKey = null;
+            Object.keys(agents).forEach(key => {
+                const idx = agents[key].leadsList.findIndex(l => l.id === currentLeadId);
+                if (idx !== -1) {
+                    agents[key].leadsList[idx].contacted = !agents[key].leadsList[idx].contacted;
+                    updatedKey = key;
+                }
+            });
+            if (updatedKey) {
+                saveData();
+                updateAgentUI(updatedKey);
+                updateGlobalSummary();
+                // Refresh open modal
+                const lead = agents[updatedKey].leadsList.find(l => l.id === currentLeadId);
+                if (lead) {
+                    document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
+                    document.getElementById('modalStatus').style.color = lead.contacted ? '#dc3545' : '#28a745';
+                    document.getElementById('contactBtn').textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
+                }
+            }
+        }
+
         function closeModal() {
             document.getElementById('leadModal').classList.remove('active');
         }
 
         // Init
         loadData();
-        renderAgents();
+        // Recalculate metrics after migration
+        Object.keys(agents).forEach(key => updateAgentUI(key));
         updateGlobalSummary();
+        renderAgents();
     </script>
 </body>
 </html>
