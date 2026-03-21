@@ -31,10 +31,10 @@ async function runAgent(agent) {
     });
     const tavilyData = await tavilyRes.json();
 
-    const messages = [
-      { role: "system", content: "You are a precise JSON extractor. Return ONLY a valid JSON array of leads. No explanations." },
-      { role: "user", content: `Extract all junk removal leads from this data as JSON array: ${JSON.stringify(tavilyData.results)}` }
-    ];
+    const prompt = `From the provided search results, extract ONLY genuine customer leads...`; // (same long prompt you already have in index.html)
+
+    const messages = [{ role: "system", content: "You are a precise JSON extractor. Return ONLY a valid JSON array of leads. No explanations." },
+      { role: "user", content: `Extract all junk removal leads... Data: ${JSON.stringify(tavilyData.results)}` }];
 
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
@@ -56,7 +56,7 @@ async function runAgent(agent) {
   }
 }
 
-// FULL manual endpoint (matches your frontend exactly)
+// FULL /search-lead endpoint (matches your index.html scanAgent exactly)
 app.post('/search-lead', async (req, res) => {
   const { action, data } = req.body;
   if (action === 'search') {
@@ -69,7 +69,8 @@ app.post('/search-lead', async (req, res) => {
       const tavilyData = await tavilyRes.json();
       return res.json({ content: tavilyData });
     } catch (e) { return res.json({ content: { results: [] } }); }
-  } else if (action === 'extract') {
+  } 
+  if (action === 'extract') {
     try {
       const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
