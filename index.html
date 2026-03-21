@@ -42,7 +42,7 @@
             <div class="summary-grid">
                 <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div class="summary-label">Total Leads Today</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div class="summary-label">Hot Leads</div></div>
-                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value">5</div><div class="summary-label">Active Agents</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="activeAgents">6</div><div class="summary-label">Active Agents</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="conversionRate">0%</div><div class="summary-label">Est. Conversion</div></div>
             </div>
         </div>
@@ -217,7 +217,7 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                     a.leadsList.forEach(l => existingKeys.add(`${l.description.toLowerCase()}|${l.source.toLowerCase()}`));
                 });
                 newLeads = newLeads.filter(lead => {
-                    const key = `${lead.description.toLowerCase()}|${lead.source.toLowerCase()}`;
+                    const key = `${lead.description.toLowerCase()}|${l.source.toLowerCase()}`;
                     return !existingKeys.has(key);
                 });
 
@@ -292,11 +292,29 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
             document.getElementById('leadModal').classList.remove('active');
         }
 
+        // Live dashboard updates from backend (syncs with the 6 auto-scanning agents + real totals/conversion)
+        async function updateDashboard() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                
+                document.getElementById('totalLeads').textContent = data.totalLeads;
+                document.getElementById('hotLeads').textContent = data.hotLeads;
+                document.getElementById('activeAgents').textContent = data.activeAgents;
+                document.getElementById('conversionRate').textContent = data.conversionRate + '%';
+                
+                // Optional: populate agents grid if you want
+                console.log('Leads updated from server:', data.leads);
+            } catch(e) {}
+        }
+
         // Init – this is what was broken before (now fully robust)
         loadData();
         Object.keys(agents).forEach(key => updateAgentUI(key));
         updateGlobalSummary();
         renderAgents();
+        updateDashboard();           // initial sync (shows 6 agents immediately)
+        setInterval(updateDashboard, 30000); // refresh every 30 seconds
     </script>
 </body>
 </html>
