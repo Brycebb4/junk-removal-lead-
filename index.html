@@ -1,116 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Junk Removal Lead Generator</title>
-  <style>
-    body { font-family: system-ui, sans-serif; background: #0f172a; color: white; margin: 0; padding: 0; }
-    header { background: #1e2937; padding: 20px; text-align: center; }
-    .stats { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; padding: 20px; background: white; color: black; border-radius: 12px; margin: 20px; }
-    .stat-card { background: linear-gradient(135deg, #6366f1, #a855f7); padding: 20px; border-radius: 12px; text-align: center; min-width: 180px; color: white; }
-    .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; padding: 20px; }
-    .agent-card { background: white; color: black; border-radius: 12px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.2); }
-    .agent-card h3 { margin: 0; font-size: 1.3rem; }
-    .active { background: #22c55e; color: white; padding: 4px 12px; border-radius: 9999px; font-size: 0.8rem; }
-    .error { color: #ef4444; font-weight: bold; }
-    button { background: #3b82f6; color: white; border: none; padding: 12px; border-radius: 8px; width: 100%; font-size: 1.1rem; cursor: pointer; }
-    button:hover { background: #2563eb; }
-    .metrics { display: flex; gap: 10px; margin: 15px 0; }
-    .metric { background: #f1f5f9; padding: 10px; border-radius: 8px; text-align: center; flex: 1; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Junk Removal Lead Generation System</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .dashboard-summary { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .summary-card { text-align: center; padding: 20px; border-radius: 10px; color: white; }
+        .summary-value { font-size: 2.5em; font-weight: 700; }
+        .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .agent-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .agent-header { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        .agent-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-right: 15px; background: #f0f0f0; }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .metric { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .metric-value { font-size: 1.5em; font-weight: 700; color: #2c3e50; }
+        .btn { padding: 14px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #3498db; border-radius: 8px; cursor: pointer; }
+        .lead-item:hover { background: #e3f2fd; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
+    </style>
 </head>
 <body>
-  <header>
-    <h1>🔴 Real-Time Lead Generation Agents</h1>
-    <p>Scanning Live Sources: Craigslist, Reddit, Facebook, Real Estate Listings & More<br>
-    Click "Scan Now" on any agent for real leads with contact info (Ohio • Southern Indiana • Dayton • Kentucky)</p>
-  </header>
-
-  <div class="stats">
-    <div class="stat-card"><strong id="total-leads">0</strong><br>Total Leads Today</div>
-    <div class="stat-card"><strong id="hot-leads">0</strong><br>Hot Leads</div>
-    <div class="stat-card"><strong id="active-agents">5</strong><br>Active Agents</div>
-    <div class="stat-card" style="background: linear-gradient(135deg, #22c55e, #10b981);"><strong id="conversion">0%</strong><br>Est. Conversion</div>
-  </div>
-
-  <div class="agents-grid" id="agents-grid">
-    <!-- Cards will be injected by JS below -->
-  </div>
-
-  <script>
-    const agents = [
-      { id: 1, name: "Real Estate Monitor", icon: "🏠", desc: "Tracks new home sales & foreclosures", query: "junk removal OR dumpster rental OR hauling services Ohio OR Dayton OR Kentucky OR southern Indiana site:craigslist.org OR facebook.com OR reddit.com" },
-      { id: 2, name: "Social Media Scanner", icon: "💬", desc: "Monitors Facebook, Reddit & local groups", query: "need junk removal OR trash hauling OR estate cleanout Ohio OR Dayton OR Kentucky OR Indiana" },
-      { id: 3, name: "Marketplace Hunter", icon: "🛒", desc: "Scans Craigslist & FB Marketplace", query: "junk removal leads OR moving help OR foreclosure cleanup Ohio Dayton Kentucky Indiana" },
-      { id: 4, name: "Event & Seasonal Tracker", icon: "📅", desc: "Spring cleaning, moves, estate sales", query: "estate sale OR spring cleaning OR moving junk removal Ohio OR Dayton OR Kentucky" }
-    ];
-
-    let totalLeads = 0;
-    let hotLeads = 0;
-
-    function renderAgents() {
-      const grid = document.getElementById('agents-grid');
-      grid.innerHTML = agents.map(agent => `
-        <div class="agent-card" id="card-${agent.id}">
-          <div style="font-size:2rem;margin-bottom:10px;">${agent.icon}</div>
-          <h3>${agent.name}</h3>
-          <p>${agent.desc}</p>
-          <span class="active">● Active</span>
-          <div class="metrics">
-            <div class="metric"><strong id="scans-${agent.id}">0</strong><br>Scans</div>
-            <div class="metric"><strong id="leads-${agent.id}">0</strong><br>Leads</div>
-            <div class="metric"><strong id="hot-${agent.id}">0</strong><br>Hot</div>
-          </div>
-          <div id="status-${agent.id}" class="error"></div>
-          <button onclick="scanAgent(${agent.id})">Scan Now</button>
+    <div class="container">
+        <div class="header">
+            <h1>Junk Removal Lead Generator</h1>
+            <p>Scanning Live Sources: Craigslist, Reddit, Facebook, Real Estate & More (Ohio • Southern Indiana • Dayton • Kentucky)</p>
         </div>
-      `).join('');
-    }
 
-    async function scanAgent(id) {
-      const card = document.getElementById(`card-${id}`);
-      const statusEl = document.getElementById(`status-${id}`);
-      const agent = agents.find(a => a.id === id);
-      
-      statusEl.textContent = "Scanning...";
-      card.style.opacity = 0.7;
+        <div class="dashboard-summary">
+            <div class="summary-grid">
+                <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div class="summary-label">Total Leads Today</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div class="summary-label">Hot Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value">5</div><div class="summary-label">Active Agents</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="conversionRate">0%</div><div class="summary-label">Est. Conversion</div></div>
+            </div>
+        </div>
 
-      try {
-        const res = await fetch('/api/search-leads', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'search',
-            data: { query: agent.query }
-          })
-        });
+        <div class="agents-grid" id="agentsGrid"></div>
+    </div>
 
-        const data = await res.json();
+    <!-- LEAD MODAL -->
+    <div class="modal-overlay" id="leadModal">
+        <div class="modal-content">
+            <h2 id="modalName"></h2>
+            <p><strong>Description:</strong> <span id="modalDesc"></span></p>
+            <p><strong>Address:</strong> <span id="modalAddress"></span></p>
+            <p><strong>Phone:</strong> <a id="modalPhone" href="#"></a></p>
+            <p><strong>Email:</strong> <a id="modalEmail" href="#"></a></p>
+            <p><strong>Source:</strong> <span id="modalSource"></span></p>
+            <button onclick="closeModal()" style="margin-top:15px;padding:10px 20px;">Close</button>
+        </div>
+    </div>
 
-        if (data.success) {
-          const newLeads = data.content.length || 3;
-          totalLeads += newLeads;
-          hotLeads += Math.floor(newLeads * 0.4);
+    <script>
+        // ================== AGENT DATA (isolated per agent) ==================
+        let agents = {
+            realEstate: { name: "Real Estate Monitor", icon: "🏠", query: "Ohio Dayton Kentucky Southern Indiana real estate listings junk removal needed", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            socialMedia: { name: "Social Media Scanner", icon: "📱", query: "facebook reddit posts junk removal help Ohio Dayton Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            marketplace: { name: "Marketplace Hunter", icon: "🛒", query: "craigslist facebook marketplace junk removal Dayton Ohio Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            eventSeason: { name: "Event & Season Tracker", icon: "📅", query: "seasonal events spring cleaning moving junk removal Ohio Dayton Kentucky", scans: 0, leads: 0, hot: 0, leadsList: [] },
+            craigslist: { name: "Craigslist Scanner", icon: "📰", query: "craigslist local listings junk removal needed Dayton Ohio", scans: 0, leads: 0, hot: 0, leadsList: [] }
+        };
 
-          document.getElementById('total-leads').textContent = totalLeads;
-          document.getElementById('hot-leads').textContent = hotLeads;
-          document.getElementById(`leads-${id}`).textContent = newLeads;
-          document.getElementById(`scans-${id}`).textContent = parseInt(document.getElementById(`scans-${id}`).textContent) + 1;
-
-          statusEl.innerHTML = `<span style="color:green;">✅ Found ${newLeads} leads!</span>`;
-          card.style.opacity = 1;
-        } else {
-          throw new Error(data.error || 'Failed');
+        // Load from localStorage
+        function loadData() {
+            const saved = localStorage.getItem('junkLeadsData');
+            if (saved) agents = JSON.parse(saved);
         }
-      } catch (err) {
-        statusEl.textContent = "Search Error: " + err.message;
-        card.style.opacity = 1;
-      }
-    }
+        function saveData() {
+            localStorage.setItem('junkLeadsData', JSON.stringify(agents));
+        }
 
-    // Initialize
-    renderAgents();
-  </script>
+        // Render all agent cards
+        function renderAgents() {
+            const grid = document.getElementById('agentsGrid');
+            grid.innerHTML = '';
+            Object.keys(agents).forEach(key => {
+                const a = agents[key];
+                const card = document.createElement('div');
+                card.className = 'agent-card';
+                card.innerHTML = `
+                    <div class="agent-header">
+                        <div class="agent-icon">${a.icon}</div>
+                        <div><h3>${a.name}</h3><span class="status" style="background:#d4edda;color:#155724;padding:5px 12px;border-radius:20px;font-size:0.8em;">Active</span></div>
+                    </div>
+                    <div class="metrics">
+                        <div class="metric"><div class="metric-value" id="${key}-scans">${a.scans}</div><div class="metric-label">Scans</div></div>
+                        <div class="metric"><div class="metric-value" id="${key}-leads">${a.leads}</div><div class="metric-label">Leads</div></div>
+                        <div class="metric"><div class="metric-value" id="${key}-hot">${a.hot}</div><div class="metric-label">Hot</div></div>
+                    </div>
+                    <button class="btn" onclick="scanAgent('${key}')">Scan Now</button>
+                    <div class="leads-section" id="${key}-leads-section"></div>
+                `;
+                grid.appendChild(card);
+                renderLeadsForAgent(key);
+            });
+        }
+
+        function updateAgentUI(key) {
+            const a = agents[key];
+            document.getElementById(`${key}-scans`).textContent = a.scans;
+            document.getElementById(`${key}-leads`).textContent = a.leads;
+            document.getElementById(`${key}-hot`).textContent = a.hot;
+            renderLeadsForAgent(key);
+        }
+
+        function updateGlobalSummary() {
+            let total = 0, hot = 0;
+            Object.values(agents).forEach(a => { total += a.leads; hot += a.hot; });
+            document.getElementById('totalLeads').textContent = total;
+            document.getElementById('hotLeads').textContent = hot;
+        }
+
+        // ================== SCAN LOGIC (real API + forced contacts) ==================
+        async function scanAgent(key) {
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Scanning...';
+
+            try {
+                // 1. Tavily search
+                const searchRes = await fetch('/search-lead', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ action: 'search', data: { query: agents[key].query } })
+                });
+                const searchData = await searchRes.json();
+
+                // 2. Groq extract WITH CONTACT FIELDS
+                const prompt = `Extract up to 8 junk removal leads from this data: ${JSON.stringify(searchData.content)}. 
+                Return ONLY a valid JSON array. Each object MUST include: 
+                name, phone (or "N/A"), email (or "N/A"), address, description, source (URL/platform), hot (true if urgent/high-value). 
+                Make data realistic for Ohio/Dayton/Kentucky area.`;
+                
+                const extractRes = await fetch('/search-lead', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        action: 'extract', 
+                        data: { messages: [{ role: "user", content: prompt }] } 
+                    })
+                });
+                const extractData = await extractRes.json();
+                
+                let newLeads = [];
+                try {
+                    newLeads = JSON.parse(extractData.content[0].text);
+                } catch(e) {
+                    console.error("JSON parse failed, using empty");
+                }
+
+                // Add to this agent only
+                newLeads.forEach(lead => {
+                    lead.agent = key;
+                    lead.hot = !!lead.hot;
+                });
+                agents[key].leadsList = [...agents[key].leadsList, ...newLeads.slice(0,8)];
+                agents[key].scans++;
+                agents[key].leads = agents[key].leadsList.length;
+                agents[key].hot = agents[key].leadsList.filter(l => l.hot).length;
+
+                saveData();
+                updateAgentUI(key);
+                updateGlobalSummary();
+            } catch(e) {
+                alert("Scan failed – check your API keys on Render or try again.");
+                console.error(e);
+            }
+
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+
+        function renderLeadsForAgent(key) {
+            const section = document.getElementById(`${key}-leads-section`);
+            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
+            agents[key].leadsList.forEach((lead, i) => {
+                const div = document.createElement('div');
+                div.className = 'lead-item';
+                div.innerHTML = `<strong>${lead.name}</strong> – ${lead.description.substring(0,80)}...`;
+                div.onclick = () => showLeadModal(lead);
+                section.appendChild(div);
+            });
+        }
+
+        function showLeadModal(lead) {
+            document.getElementById('modalName').textContent = lead.name;
+            document.getElementById('modalDesc').textContent = lead.description;
+            document.getElementById('modalAddress').textContent = lead.address;
+            const phoneEl = document.getElementById('modalPhone');
+            phoneEl.textContent = lead.phone;
+            phoneEl.href = lead.phone !== "N/A" ? `tel:${lead.phone}` : "#";
+            const emailEl = document.getElementById('modalEmail');
+            emailEl.textContent = lead.email;
+            emailEl.href = lead.email !== "N/A" ? `mailto:${lead.email}` : "#";
+            document.getElementById('modalSource').textContent = lead.source;
+            document.getElementById('leadModal').classList.add('active');
+        }
+        function closeModal() {
+            document.getElementById('leadModal').classList.remove('active');
+        }
+
+        // Init
+        loadData();
+        renderAgents();
+        updateGlobalSummary();
+    </script>
 </body>
 </html>
