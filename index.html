@@ -824,42 +824,44 @@
     });
     return await response.json();
 }
-    async function extractLeadsFromResults(searchData, query) {
-        const response = await fetch('/.netlify/functions/search-leads', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                action: 'extract',
-                data: {
-                    messages: [
-                        {
-                            role: "user",
-                            content: `Extract 1-3 real leads for Junk Removal Guys from these search results for "${query}". Return JSON array with: contactName, phone, email, title, location, details, urgency (1-10), estimatedValue, source, sourceUrl, nextSteps. Return empty array [] if no good leads found.`
-                        },
-                        {
-                            role: "assistant",
-                            content: JSON.stringify(searchData.content)
-                        },
-                        {
-                            role: "user",
-                            content: "Extract leads as JSON:"
-                        }
-                    ]
-                }
-            })
-        });
+   async function extractLeadsFromResults(searchData, query) {
+    const response = await fetch('/.netlify/functions/search-leads', {   // or /api/search-leads on Render
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            action: 'extract',
+            data: {
+                messages: [
+                    {
+                        role: "user",
+                        content: `Extract 1-3 real leads for Junk Removal Guys from these search results for "${query}". Return ONLY a valid JSON array with fields: contactName, phone, email, title, location, details, urgency (1-10), estimatedValue, source, sourceUrl, nextSteps. Return [] if no good leads.`
+                    },
+                    {
+                        role: "assistant",
+                        content: JSON.stringify(searchData.content)
+                    },
+                    {
+                        role: "user",
+                        content: "Return only the JSON array:"
+                    }
+                ]
+            }
+        })
+    });
 
-        const data = await response.json();
-        const text = data.content?.map(i => i.text || "").filter(Boolean).join("\n") || "";
-        
-        try {
-            const cleanText = text.replace(/```json|```/g, "").trim();
-            return JSON.parse(cleanText) || [];
-        } catch {
-            return [];
-        }
+    const data = await response.json();
+    let text = data.content?.[0]?.text || data.content?.[0]?.message?.content || '[]';
+
+    // Safety cleanup for Groq response
+    text = text.replace(/```json|```/g, '').trim();
+
+    try {
+        return JSON.parse(text) || [];
+    } catch (e) {
+        console.error("JSON parse failed:", text);
+        return [];
     }
-
+}
     function deduplicateLeads(leads) {
         const seen = new Set();
         return leads.filter(lead => {
