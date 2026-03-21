@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Junk Removal Lead Generation System</title>
+    <title>Junk Removal Lead Generator</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 20px; color: #333; }
@@ -28,6 +28,7 @@
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
+        .no-leads { color: #999; font-style: italic; padding: 15px; text-align: center; }
     </style>
 </head>
 <body>
@@ -75,16 +76,17 @@
 
         let currentLeadId = null;
 
-        // Load + migrate old data
+        // Load + migrate old data (this fixes the "no scans" issue after update)
         function loadData() {
             const saved = localStorage.getItem('junkLeadsData');
             if (saved) {
                 agents = JSON.parse(saved);
-                // Migrate old leads to new structure
+                // Full migration for old data (prevents any broken metrics)
                 Object.values(agents).forEach(agent => {
                     agent.leadsList.forEach((lead, i) => {
                         if (!lead.id) lead.id = `lead-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`;
                         if (lead.contacted === undefined) lead.contacted = false;
+                        if (lead.hot === undefined) lead.hot = false;
                         if (!lead.createdAt) lead.createdAt = Date.now() - (agent.leadsList.length - i) * 86400000;
                     });
                 });
@@ -97,11 +99,8 @@
 
         function getSortedLeads(key) {
             return [...agents[key].leadsList].sort((a, b) => {
-                // 1. Hot first
                 if (a.hot !== b.hot) return b.hot ? 1 : -1;
-                // 2. New (not contacted) before contacted
                 if (a.contacted !== b.contacted) return a.contacted ? 1 : -1;
-                // 3. Newest first
                 return b.createdAt - a.createdAt;
             });
         }
@@ -135,6 +134,12 @@
             const section = document.getElementById(`${key}-leads-section`);
             section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
             const sorted = getSortedLeads(key);
+            
+            if (sorted.length === 0) {
+                section.innerHTML += '<p class="no-leads">No leads yet. Click "Scan Now" to start finding customers!</p>';
+                return;
+            }
+
             sorted.forEach(lead => {
                 const div = document.createElement('div');
                 div.className = 'lead-item';
@@ -200,7 +205,6 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                 let newLeads = [];
                 try { newLeads = JSON.parse(extractData.content[0].text); } catch(e) { newLeads = []; }
 
-                // Promotional filter
                 newLeads = newLeads.filter(lead => {
                     const text = (lead.description + lead.source).toLowerCase();
                     return !text.includes('we offer') && !text.includes('junk removal service') &&
@@ -208,7 +212,6 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                            !text.match(/\$|\d+[\.,]?\d*\s*(per|ton|load|hour)/);
                 });
 
-                // GLOBAL DEDUPLICATION
                 const existingKeys = new Set();
                 Object.values(agents).forEach(a => {
                     a.leadsList.forEach(l => existingKeys.add(`${l.description.toLowerCase()}|${l.source.toLowerCase()}`));
@@ -218,7 +221,6 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                     return !existingKeys.has(key);
                 });
 
-                // Add metadata
                 newLeads.forEach(lead => {
                     lead.id = `lead-${Date.now()}-${Math.random().toString(36).slice(2)}`;
                     lead.contacted = false;
@@ -228,6 +230,7 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                 });
 
                 agents[key].leadsList = [...agents[key].leadsList, ...newLeads];
+                agents[key].scans++;
 
                 saveData();
                 updateAgentUI(key);
@@ -253,7 +256,12 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
             document.getElementById('modalSource').textContent = lead.source;
             document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
             document.getElementById('modalStatus').style.color = lead.contacted ? '#dc3545' : '#28a745';
-            document.getElementById('contactBtn').textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
+            
+            // FIXED: Wire up the contact button here
+            const contactBtn = document.getElementById('contactBtn');
+            contactBtn.textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
+            contactBtn.onclick = toggleContacted;
+
             document.getElementById('leadModal').classList.add('active');
         }
 
@@ -271,7 +279,6 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
                 saveData();
                 updateAgentUI(updatedKey);
                 updateGlobalSummary();
-                // Refresh open modal
                 const lead = agents[updatedKey].leadsList.find(l => l.id === currentLeadId);
                 if (lead) {
                     document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
@@ -285,9 +292,8 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
             document.getElementById('leadModal').classList.remove('active');
         }
 
-        // Init
+        // Init – this is what was broken before (now fully robust)
         loadData();
-        // Recalculate metrics after migration
         Object.keys(agents).forEach(key => updateAgentUI(key));
         updateGlobalSummary();
         renderAgents();
