@@ -812,7 +812,7 @@
   async function performWebSearch(query) {
     const fullArea = "Oxford Ohio, Miami University area, Harrison, Ross, Shandon, Okeana, Collinsville, Darrtown, Somerville, Jacksonburg, Astoria, West Elkton, Morning Sun, Lawrenceburg Indiana, Guilford, Wrights Corner, Wilmington, Petersburg, Greendale, Hidden Valley, New Haven";
 
-    const response = await fetch('/api/search-leads', {   // ← Changed to Render path
+    const response = await fetch('/api/search-leads', {   // ← This is the Render path
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -824,8 +824,8 @@
     });
     return await response.json();
 }
-   async function extractLeadsFromResults(searchData, query) {
-    const response = await fetch('/api/search-leads', {   // ← Changed to Render path
+async function extractLeadsFromResults(searchData, query) {
+    const response = await fetch('/api/search-leads', {   // ← Render path
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
