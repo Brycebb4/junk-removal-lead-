@@ -1,10 +1,15 @@
+// api/search-leads.js  ←  FULLY REPLACED FILE
 export default async function handler(req) {
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { status: 405, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+    );
   }
 
   try {
-    const { action, data } = JSON.parse(req.body);
+    // FIXED: This was the #1 bug causing parse errors
+    const { action, data } = await req.json();
 
     if (action === 'search') {
       const tavilyRes = await fetch('https://api.tavily.com/search', {
@@ -17,12 +22,15 @@ export default async function handler(req) {
           max_results: 8
         })
       });
+
+      if (!tavilyRes.ok) throw new Error(`Tavily error: ${tavilyRes.status}`);
+
       const tavilyData = await tavilyRes.json();
 
-      return new Response(JSON.stringify({ content: tavilyData.results || [] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+      return new Response(
+        JSON.stringify({ success: true, content: tavilyData.results || [] }),
+        { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      );
     }
 
     if (action === 'extract') {
@@ -39,23 +47,33 @@ export default async function handler(req) {
         },
         body: JSON.stringify({
           model: 'llama-3.3-70b-versatile',
-          messages: messages,
+          messages,
           max_tokens: 2000,
           temperature: 0.2
         })
       });
+
+      if (!groqRes.ok) throw new Error(`Groq error: ${groqRes.status}`);
+
       const groqData = await groqRes.json();
       const text = groqData.choices?.[0]?.message?.content || '[]';
 
-      return new Response(JSON.stringify({ content: [{ type: 'text', text }] }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+      return new Response(
+        JSON.stringify({ success: true, content: [{ type: 'text', text }] }),
+        { status: 200, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+      );
     }
 
-    return new Response(JSON.stringify({ error: 'Invalid action' }), { status: 400 });
+    return new Response(JSON.stringify({ error: 'Invalid action' }), { 
+      status: 400, 
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } 
+    });
+
   } catch (error) {
     console.error('Function error:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', message: error.message }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: 'Internal server error', message: error.message }),
+      { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
+    );
   }
 }
