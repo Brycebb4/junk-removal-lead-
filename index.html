@@ -74,7 +74,7 @@
         };
 
         let currentLeadId = null;
-        let seenLeads = new Set(); // GLOBAL dedup — no duplicates ever
+        let seenLeads = new Set();
 
         function loadData() {
             const saved = localStorage.getItem('junkLeadsData');
@@ -115,102 +115,4 @@
         }
 
         function renderLeadsForAgent(key) {
-            const section = document.getElementById(`${key}-leads-section`);
-            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
-            const sorted = getSortedLeads(key);
-            if (sorted.length === 0) {
-                section.innerHTML += '<p class="no-leads">No leads yet. Click "Scan Now" to start finding customers!</p>';
-                return;
-            }
-            sorted.forEach(lead => {
-                const div = document.createElement('div');
-                div.className = 'lead-item';
-                div.innerHTML = `${lead.hot ? '🔥 ' : ''}<strong>${lead.name}</strong> – ${lead.description.substring(0,80)}${lead.description.length > 80 ? '...' : ''}`;
-                div.onclick = () => showLeadModal(lead);
-                section.appendChild(div);
-            });
-        }
-
-        function updateAgentUI(key) {
-            const a = agents[key];
-            a.leads = a.leadsList.length;
-            a.hot = a.leadsList.filter(l => l.hot).length;
-            document.getElementById(`${key}-scans`).textContent = a.scans;
-            document.getElementById(`${key}-leads`).textContent = a.leads;
-            document.getElementById(`${key}-hot`).textContent = a.hot;
-            renderLeadsForAgent(key);
-        }
-
-        function updateGlobalSummary() {
-            let total = 0, hot = 0;
-            Object.values(agents).forEach(a => { total += a.leads; hot += a.hot; });
-            document.getElementById('totalLeads').textContent = total;
-            document.getElementById('hotLeads').textContent = hot;
-        }
-
-        async function scanAgent(key) {
-            const btn = event.target;
-            const originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Scanning...';
-
-            try {
-                const searchRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'search', data: { query: agents[key].query } }) });
-                const searchData = await searchRes.json();
-
-                const prompt = `Extract ONLY real individual homeowners/renters asking for junk removal. NEVER return businesses, companies, services, LLCs, or ads. Return ONLY JSON array with name, phone, email, address, description, source (full URL), hot.`;
-
-                const extractRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'extract', data: { messages: [{ role: "user", content: prompt }] } }) });
-                const extractData = await extractRes.json();
-
-                let newLeads = [];
-                try { newLeads = JSON.parse(extractData.content[0].text || '[]'); } catch(e) { newLeads = []; }
-
-                newLeads = newLeads.filter(lead => {
-                    const keyCheck = `${(lead.description || '').toLowerCase()}|${(lead.source || '').toLowerCase()}`;
-                    if (seenLeads.has(keyCheck)) return false;
-                    const text = (lead.description + (lead.source || '')).toLowerCase();
-                    if (text.includes('we offer') || text.includes('company') || text.includes('business') || text.includes('loadup') || text.includes('gotjunk') || text.includes('llc') || text.includes('professional')) return false;
-                    seenLeads.add(keyCheck);
-                    return true;
-                });
-
-                newLeads.forEach(lead => {
-                    lead.id = `lead-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-                    lead.contacted = false;
-                    lead.createdAt = Date.now();
-                    lead.agent = key;
-                    lead.hot = !!lead.hot;
-                });
-
-                agents[key].leadsList = [...agents[key].leadsList, ...newLeads];
-                agents[key].scans++;
-
-                saveData();
-                updateAgentUI(key);
-                updateGlobalSummary();
-            } catch(e) {
-                alert("Scan failed – check Render logs");
-            }
-
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
-
-        function showLeadModal(lead) {
-            currentLeadId = lead.id;
-            document.getElementById('modalName').textContent = lead.name;
-            document.getElementById('modalDesc').textContent = lead.description;
-            document.getElementById('modalAddress').textContent = lead.address || 'N/A';
-
-            const phoneLink = document.getElementById('modalPhone');
-            phoneLink.textContent = lead.phone || 'N/A';
-            phoneLink.href = lead.phone && lead.phone !== "N/A" ? `tel:${lead.phone}` : "#";
-
-            const emailLink = document.getElementById('modalEmail');
-            emailLink.textContent = lead.email || 'N/A';
-            emailLink.href = lead.email && lead.email !== "N/A" ? `mailto:${lead.email}` : "#";
-
-            const sourceLink = document.getElementById('modalSourceLink');
-            sourceLink.textContent = lead.source || 'N/A';
-            sourceLink.href = lead.source
+            const section = document
