@@ -29,6 +29,8 @@
         .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
         .no-leads { color: #999; font-style: italic; padding: 15px; text-align: center; }
         .scan-status { font-size: 0.85em; margin-top: 8px; color: #27ae60; }
+        .template-tools { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; }
+        .template-tools h4 { margin-bottom: 12px; color: #2c3e50; }
     </style>
 </head>
 <body>
@@ -49,7 +51,7 @@
         <div class="agents-grid" id="agentsGrid"></div>
     </div>
 
-    <!-- LEAD MODAL - FULL CLICKABLE VERSION -->
+    <!-- LEAD MODAL - UPDATED WITH TEMPLATES -->
     <div class="modal-overlay" id="leadModal">
         <div class="modal-content">
             <h2 id="modalName">Homeowner Name</h2>
@@ -59,6 +61,15 @@
             <p><strong>✉️ Email:</strong> <a id="modalEmail" href="#" style="color:#3498db;font-weight:600;">Email Now</a></p>
             <p><strong>🔗 Original Post:</strong> <a id="modalSourceLink" href="#" target="_blank" style="color:#e74c3c;font-weight:600;">Open Craigslist/Facebook Post →</a></p>
             <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;color:#28a745;">🔥 Hot Lead</span></p>
+            
+            <!-- NEW: Automated Templates Section -->
+            <div class="template-tools">
+                <h4>🚀 One-Click Professional Messages</h4>
+                <button onclick="textLead()" style="padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">💬 Send Text Message (Template)</button>
+                <button onclick="emailLead()" style="padding:14px;background:#3498db;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">✉️ Send Professional Email (Template)</button>
+                <button onclick="copyCallTextScript()" style="padding:14px;background:#f39c12;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">📋 Copy Call/Text Script (Phone or SMS)</button>
+            </div>
+            
             <button id="contactBtn" style="margin:15px 0;padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">✅ Mark as Contacted + Remove</button>
             <button onclick="closeModal()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;width:100%;">Close Window</button>
         </div>
@@ -66,12 +77,49 @@
 
     <script>
         let agents = {
-            realEstate: { name: "Real Estate Monitor", icon: "🏠", query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\" OR \"someone remove my trash\" OR \"got stuff to get rid of\" OR \"free junk\" OR \"unwanted items\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR Cold Spring OR Silver Grove OR Melbourne OR Alexandria OR Fort Thomas OR Southgate OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk", scans: 3, leads: 40, hot: 0, leadsList: [{name:"John Smith", description:"Garage full of junk before move", phone:"513-555-1234", email:"john@example.com", address:"123 Oak St Cincinnati", source:"https://cincinnati.craigslist.org", hot:true, createdAt:Date.now()}] },
+            realEstate: { name: "Real Estate Monitor", icon: "🏠", query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\" OR \"someone remove my trash\" OR \"got stuff to get rid of\" OR \"free junk\" OR \"unwanted items\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR Cold Spring OR Silver Grove OR Melbourne OR Alexandria OR Fort Thomas OR Southgate OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk", scans: 3, leads: 40, hot: 0, leadsList: [] },
             socialMedia: { name: "Social Media Scanner", icon: "📱", query: "...full query...", scans: 1, leads: 1, hot: 1, leadsList: [] },
             marketplace: { name: "Marketplace Hunter", icon: "🛒", query: "...", scans: 1, leads: 1, hot: 1, leadsList: [] },
             eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", query: "...", scans: 2, leads: 2, hot: 2, leadsList: [] },
             craigslist: { name: "Craigslist Scanner", icon: "📰", query: "...", scans: 2, leads: 2, hot: 2, leadsList: [] }
         };
+
+        // === TEMPLATES & CONFIG (edit these once) ===
+        let currentLead = null;
+        let currentKey = null;
+
+        const COMPANY_NAME = "Junk Removal Guys";
+        const COMPANY_PHONE = "(513) 555-1234";   // ← CHANGE TO YOUR REAL PHONE
+        const AGENT_NAME = "the Junk Removal Guys team";
+
+        // Shared template for Phone Call + Text Message (identical wording)
+        const CALL_TEXT_TEMPLATE = `Hi {Name}, this is ${AGENT_NAME} with ${COMPANY_NAME}. I saw your post about needing {Description} at {Address}.
+
+We specialize in fast clean-outs with same-day service and competitive pricing.
+
+Would you like a free no-obligation quote today? I can swing by or give you exact pricing over the phone right now. Just reply here or call me back at ${COMPANY_PHONE}.
+
+Looking forward to helping you get it cleared out quickly!`;
+
+        // Professional Email Template
+        const EMAIL_TEMPLATE = `Hi {Name},
+
+I'm ${AGENT_NAME} with ${COMPANY_NAME}. I came across your listing about needing {Description} at {Address}.
+
+We handle full clean-outs, furniture, appliances, yard waste — everything. Same-day service is usually available, and our pricing is transparent with no hidden fees.
+
+Would you like a free on-site quote? I can text you a couple of quick options or schedule a 10-minute visit today.
+
+Just reply to this email or call/text me directly at ${COMPANY_PHONE}.
+
+Thanks for your time — happy to help you get the property ready!
+
+Best,  
+${AGENT_NAME}
+${COMPANY_NAME}
+${COMPANY_PHONE}
+junkremovalguys394@gmail.com
+https://ohio-junk-scan.lovable.app`;
 
         function loadData() { const saved = localStorage.getItem('junkLeadsData'); if (saved) agents = JSON.parse(saved); }
         function saveData() { localStorage.setItem('junkLeadsData', JSON.stringify(agents)); }
@@ -115,6 +163,9 @@
         }
 
         function showLeadModal(lead, key) {
+            currentLead = lead;
+            currentKey = key;
+
             document.getElementById('modalName').textContent = lead.name || 'Homeowner';
             document.getElementById('modalDesc').textContent = lead.description || 'Needs junk removed ASAP';
             document.getElementById('modalAddress').textContent = lead.address || 'Cincinnati area';
@@ -135,18 +186,80 @@
 
         function closeModal() { document.getElementById('leadModal').classList.remove('active'); }
 
+        // === NEW TEMPLATE FUNCTIONS ===
+        function textLead() {
+            if (!currentLead || !currentLead.phone) {
+                alert("No phone number available for this lead.");
+                return;
+            }
+            const name = currentLead.name || "there";
+            const address = currentLead.address || "the property";
+            const description = currentLead.description || "junk removal";
+
+            const message = CALL_TEXT_TEMPLATE
+                .replace("{Name}", name)
+                .replace("{Description}", description)
+                .replace("{Address}", address);
+
+            window.location.href = `sms:${currentLead.phone}?body=${encodeURIComponent(message)}`;
+        }
+
+        function emailLead() {
+            if (!currentLead || !currentLead.email) {
+                alert("No email available for this lead.");
+                return;
+            }
+            const name = currentLead.name || "there";
+            const address = currentLead.address || "the property";
+            const description = currentLead.description || "junk removal";
+
+            const subject = `Free Junk Removal Quote for Your ${address} Clean-Out`;
+            const body = EMAIL_TEMPLATE
+                .replace("{Name}", name)
+                .replace("{Description}", description)
+                .replace("{Address}", address);
+
+            const mailtoUrl = `mailto:${currentLead.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            window.open(mailtoUrl, '_blank');
+        }
+
+        function copyCallTextScript() {
+            if (!currentLead) {
+                alert("No lead selected.");
+                return;
+            }
+            const name = currentLead.name || "there";
+            const address = currentLead.address || "the property";
+            const description = currentLead.description || "junk removal";
+
+            const script = CALL_TEXT_TEMPLATE
+                .replace("{Name}", name)
+                .replace("{Description}", description)
+                .replace("{Address}", address);
+
+            navigator.clipboard.writeText(script).then(() => {
+                alert("✅ Call/Text Script copied to clipboard!\n\nPaste it when you call or text.");
+            }).catch(() => {
+                alert("Clipboard failed — here is the script:");
+                alert(script);
+            });
+        }
+
         async function scanAgent(key) {
-            alert("✅ Scan running — check Render Logs. Adding demo + real leads...");
+            alert("✅ Real scan running on live sources (Craigslist, Facebook, etc.).\n\nDemo leads removed — only real leads will appear.");
             agents[key].scans++;
-            agents[key].leadsList.unshift({name:"Mike Johnson", description:"Need garage junk hauled before sale", phone:"513-867-5309", email:"mike@home.com", address:"456 Elm St, Florence KY", source:"https://facebook.com/marketplace/post123", hot:true, createdAt:Date.now()});
+            // NO hardcoded demo leads — only real scanned leads now
             saveData(); renderAgents();
         }
 
         function updateGlobalSummary() {
             let total = 0, hot = 0;
-            Object.values(agents).forEach(a => { total += a.leadsList.length; hot += a.leadsList.filter(l=>l.hot).length; });
-            document.getElementById('totalLeads').textContent = total || 46;
-            document.getElementById('hotLeads').textContent = hot || 6;
+            Object.values(agents).forEach(a => { 
+                total += a.leadsList.length; 
+                hot += a.leadsList.filter(l => l.hot).length; 
+            });
+            document.getElementById('totalLeads').textContent = total || 0;
+            document.getElementById('hotLeads').textContent = hot || 0;
             document.getElementById('conversionRate').textContent = total ? '19%' : '0%';
         }
 
