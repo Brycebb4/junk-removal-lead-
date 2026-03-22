@@ -13,11 +13,11 @@ let conversionRate = 0;
 let seenLeads = new Set();
 
 const agents = [
-  { name: "Real Estate Monitor", query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\") -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk -professional -llc -inc -rumpke" },
-  { name: "Social Media Scanner", query: "(\"anyone haul my junk\" OR \"need junk removed\" OR \"recommend junk hauler\" OR \"looking for someone to remove junk\" OR \"junk removal help\" OR \"pickup my trash\" OR \"need junk hauled\") (Ohio OR Dayton OR Kentucky OR \"southern Indiana\") (facebook.com OR reddit.com OR nextdoor.com) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
-  { name: "Craigslist Scanner", query: "(\"need junk removed\" OR \"junk haul\" OR \"remove my junk\" OR \"trash hauled\" OR \"scrap removal needed\") (dayton OR cincinnati OR \"southern ohio\" OR kentucky) site:craigslist.org -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
-  { name: "Marketplace Hunter", query: "(\"junk removal needed\" OR \"need junk hauled\" OR \"haul away junk\" OR \"remove my junk\" OR \"trash removal help\") (Ohio OR Dayton OR Kentucky OR \"southern Indiana\") (craigslist.org OR facebook.com/marketplace OR nextdoor.com) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
-  { name: "Event & Seasonal Tracker", query: "(\"spring cleaning junk\" OR \"moving junk removal\" OR \"estate sale junk\" OR \"garage cleanout needed\" OR \"need junk hauled\") (Ohio OR Dayton OR Kentucky OR Indiana) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" }
+  { name: "Real Estate Monitor", query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk -professional -llc -inc -rumpke" },
+  { name: "Social Media Scanner", query: "(\"anyone haul my junk\" OR \"need junk removed\" OR \"recommend junk hauler\" OR \"looking for someone to remove junk\" OR \"junk removal help\" OR \"pickup my trash\" OR \"need junk hauled\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Independence) (facebook.com OR reddit.com OR nextdoor.com) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
+  { name: "Craigslist Scanner", query: "(\"need junk removed\" OR \"junk haul\" OR \"remove my junk\" OR \"trash hauled\" OR \"scrap removal needed\") (dayton OR cincinnati OR \"southern ohio\" OR kentucky OR florence OR erlanger OR covington OR newport OR bullittsville OR hebron OR lawrenceburg OR independence) site:craigslist.org -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
+  { name: "Marketplace Hunter", query: "(\"junk removal needed\" OR \"need junk hauled\" OR \"haul away junk\" OR \"remove my junk\" OR \"trash removal help\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Independence) (craigslist.org OR facebook.com/marketplace OR nextdoor.com) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" },
+  { name: "Event & Seasonal Tracker", query: "(\"spring cleaning junk\" OR \"moving junk removal\" OR \"estate sale junk\" OR \"garage cleanout needed\" OR \"need junk hauled\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Independence) -\"we offer\" -service -company -business -loadup -gotjunk -professional -llc -inc -rumpke" }
 ];
 
 async function runAgent(agent) {
@@ -54,10 +54,10 @@ async function runAgent(agent) {
   } catch (e) {}
 }
 
-cron.schedule('*/3 * * * *', () => runAgent(agents[0]));
-cron.schedule('*/5 * * * *', () => runAgent(agents[2]));
-cron.schedule('*/8 * * * *', () => runAgent(agents[1]));
-cron.schedule('*/12 * * * *', () => { runAgent(agents[3]); runAgent(agents[4]); });
+// ALL AGENTS SCAN EVERY 5 MINUTES (24/7)
+cron.schedule('*/5 * * * *', () => {
+  agents.forEach(runAgent);
+});
 
 app.post('/search-lead', async (req, res) => {
   const { action, data } = req.body;
@@ -77,4 +77,4 @@ app.post('/search-lead', async (req, res) => {
 app.get('/api/stats', (req, res) => res.json({ totalLeads, hotLeads, activeAgents, conversionRate }));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`✅ LIVE with strict customer-only scanning`));
+app.listen(PORT, () => console.log(`✅ LIVE with 24/7 scanning in your exact map areas`));
