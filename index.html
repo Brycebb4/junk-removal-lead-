@@ -177,18 +177,21 @@
             statusEl.textContent = 'Searching your full map area...';
             statusEl.style.color = '#e74c3c';
 
-            try {
-                const searchRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'search', data: { query: agents[key].query } }) });
-                const searchData = await searchRes.json();
+           try {
+    const searchRes = await fetch('/search-lead', { method: 'POST', body: JSON.stringify({ action: 'search', data: { query: agents[key].query } }) });
+    const searchData = await searchRes.json();
 
-                const prompt = `Extract genuine customer posts where individuals (homeowners/renters) are asking for junk removal help. Include borderline cases like "got stuff to get rid of", "free junk", "unwanted items", "anyone take my trash". Ignore obvious company ads. Return ONLY JSON array with name, phone, email, address, description, source (full URL), hot.`;
+    const prompt = `Extract ONLY real individual homeowners... Return ONLY JSON array with name, phone, email, address, description, source, hot.`;
+    const fullPrompt = prompt + `\n\nSEARCH RESULTS: ${JSON.stringify(searchData.results || searchData)}`;
 
-                const extractRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'extract', data: { messages: [{ role: "user", content: prompt }] } }) });
-                const extractData = await extractRes.json();
+    const extractRes = await fetch('/search-lead', { method: 'POST', body: JSON.stringify({ 
+        action: 'extract', 
+        data: { messages: [{ role: "user", content: fullPrompt }] } 
+    }) });
+    const extractData = await extractRes.json();
 
-                let newLeads = [];
-                try { newLeads = JSON.parse(extractData.content[0].text || '[]'); } catch(e) { newLeads = []; }
-
+    let newLeads = [];
+    try { newLeads = JSON.parse(extractData.content[0].text || '[]'); } catch(e) {}
                 newLeads = newLeads.filter(lead => {
                     const keyCheck = `${(lead.description || '').toLowerCase()}|${(lead.source || '').toLowerCase()}`;
                     if (seenLeads.has(keyCheck)) return false;
