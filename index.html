@@ -173,7 +173,17 @@
                 const searchRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'search', data: { query: agents[key].query } }) });
                 const searchData = await searchRes.json();
 
-                const prompt = `From the provided search results, extract ONLY genuine customer leads...`; // (your original long prompt)
+                const prompt = `From the provided search results, extract ONLY genuine customer leads where someone is **asking for junk removal / hauling / scrap removal help** (homeowners, renters, etc.). Ignore any posts from companies offering services.
+Extract up to 6 leads as a valid JSON array of objects. Each object MUST have:
+- name: person's name or "Anonymous" if not given
+- phone: number or "N/A"
+- email: email or "N/A"
+- address: full or partial address or "N/A"
+- description: short summary of what they need removed / situation
+- source: full URL or platform + post title/snippet
+- hot: true if sounds urgent (same-day, large volume, moving soon, etc.), false otherwise
+
+Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ONLY the JSON array, no other text. Data: ${JSON.stringify(searchData.content || [])}`;
 
                 const extractRes = await fetch('/search-lead', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ action: 'extract', data: { messages: [{ role: "user", content: prompt }] } }) });
                 const extractData = await extractRes.json();
@@ -182,16 +192,16 @@
                 try { newLeads = JSON.parse(extractData.content[0].text || '[]'); } catch(e) { newLeads = []; }
 
                 newLeads = newLeads.filter(lead => {
-                    const text = (lead.description + lead.source).toLowerCase();
+                    const text = (lead.description + (lead.source || '')).toLowerCase();
                     return !text.includes('we offer') && !text.includes('junk removal service') && !text.includes('call us') && !text.includes('our company') && !text.match(/\$|\d+[\.,]?\d*\s*(per|ton|load|hour)/);
                 });
 
                 const existingKeys = new Set();
                 Object.values(agents).forEach(a => {
-                    a.leadsList.forEach(l => existingKeys.add(`${l.description.toLowerCase()}|${l.source.toLowerCase()}`));
+                    a.leadsList.forEach(l => existingKeys.add(`${l.description.toLowerCase()}|${(l.source || '').toLowerCase()}`));
                 });
                 newLeads = newLeads.filter(lead => {
-                    const keyCheck = `${lead.description.toLowerCase()}|${lead.source.toLowerCase()}`;  // ← FIXED typo (was 'l')
+                    const keyCheck = `${lead.description.toLowerCase()}|${(lead.source || '').toLowerCase()}`;
                     return !existingKeys.has(keyCheck);
                 });
 
@@ -218,29 +228,4 @@
             btn.textContent = originalText;
         }
 
-        function showLeadModal(lead) { /* unchanged from your paste */ }
-        function toggleContacted() { /* unchanged */ }
-        function closeModal() { /* unchanged */ }
-
-        // Live dashboard updates
-        async function updateDashboard() {
-            try {
-                const res = await fetch('/api/stats');
-                const data = await res.json();
-                document.getElementById('totalLeads').textContent = data.totalLeads;
-                document.getElementById('hotLeads').textContent = data.hotLeads;
-                document.getElementById('activeAgents').textContent = data.activeAgents;
-                document.getElementById('conversionRate').textContent = data.conversionRate + '%';
-            } catch(e) {}
-        }
-
-        // FIXED INIT ORDER (render first!)
-        loadData();
-        renderAgents();                     // ← moved here so IDs exist
-        Object.keys(agents).forEach(key => updateAgentUI(key));
-        updateGlobalSummary();
-        updateDashboard();
-        setInterval(updateDashboard, 30000);
-    </script>
-</body>
-</html>
+        function showLeadModal(lead)
