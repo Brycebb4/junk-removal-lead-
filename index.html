@@ -228,4 +228,72 @@ Only include leads from Ohio, Dayton area, southern Indiana, Kentucky. Return ON
             btn.textContent = originalText;
         }
 
-        function showLeadModal(lead)
+        function showLeadModal(lead) {
+            currentLeadId = lead.id;
+            document.getElementById('modalName').textContent = lead.name;
+            document.getElementById('modalDesc').textContent = lead.description;
+            document.getElementById('modalAddress').textContent = lead.address;
+            document.getElementById('modalPhone').textContent = lead.phone;
+            document.getElementById('modalPhone').href = lead.phone !== "N/A" ? `tel:${lead.phone}` : "#";
+            document.getElementById('modalEmail').textContent = lead.email;
+            document.getElementById('modalEmail').href = lead.email !== "N/A" ? `mailto:${lead.email}` : "#";
+            document.getElementById('modalSource').textContent = lead.source;
+            document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
+            document.getElementById('modalStatus').style.color = lead.contacted ? '#dc3545' : '#28a745';
+            
+            const contactBtn = document.getElementById('contactBtn');
+            contactBtn.textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
+            contactBtn.onclick = toggleContacted;
+
+            document.getElementById('leadModal').classList.add('active');
+        }
+
+        function toggleContacted() {
+            if (!currentLeadId) return;
+            let updatedKey = null;
+            Object.keys(agents).forEach(key => {
+                const idx = agents[key].leadsList.findIndex(l => l.id === currentLeadId);
+                if (idx !== -1) {
+                    agents[key].leadsList[idx].contacted = !agents[key].leadsList[idx].contacted;
+                    updatedKey = key;
+                }
+            });
+            if (updatedKey) {
+                saveData();
+                updateAgentUI(updatedKey);
+                updateGlobalSummary();
+                const lead = agents[updatedKey].leadsList.find(l => l.id === currentLeadId);
+                if (lead) {
+                    document.getElementById('modalStatus').textContent = lead.contacted ? 'Contacted' : 'New';
+                    document.getElementById('modalStatus').style.color = lead.contacted ? '#dc3545' : '#28a745';
+                    document.getElementById('contactBtn').textContent = lead.contacted ? 'Mark as New' : 'Mark as Contacted';
+                }
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('leadModal').classList.remove('active');
+        }
+
+        // Live dashboard sync
+        async function updateDashboard() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+                document.getElementById('totalLeads').textContent = data.totalLeads;
+                document.getElementById('hotLeads').textContent = data.hotLeads;
+                document.getElementById('activeAgents').textContent = data.activeAgents;
+                document.getElementById('conversionRate').textContent = data.conversionRate + '%';
+            } catch(e) {}
+        }
+
+        // Init
+        loadData();
+        renderAgents();
+        Object.keys(agents).forEach(key => updateAgentUI(key));
+        updateGlobalSummary();
+        updateDashboard();
+        setInterval(updateDashboard, 30000);
+    </script>
+</body>
+</html>
