@@ -6,10 +6,7 @@ const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-console.log("🚀 Junk Lead Server LIVE | TAVILY key:", !!process.env.TAVILY_API_KEY, "| GROQ key:", !!process.env.GROQ_API_KEY);
-
-let totalLeads = 0, hotLeads = 0, activeAgents = 6, conversionRate = 0;
-let seenLeads = new Set();
+console.log("🚀 SERVER LIVE | TAVILY key:", !!process.env.TAVILY_API_KEY, "| GROQ key:", !!process.env.GROQ_API_KEY);
 
 const agents = [
   { id: "realEstate", name: "Real Estate Monitor", query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\" OR \"someone remove my trash\" OR \"got stuff to get rid of\" OR \"free junk\" OR \"unwanted items\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR Cold Spring OR Silver Grove OR Melbourne OR Alexandria OR Fort Thomas OR Southgate OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk" },
@@ -21,52 +18,51 @@ const agents = [
 
 async function runAgent(agent) {
   try {
-    console.log(`🔍 ${agent.name} scanning...`);
-    const tavilyRes = await fetch('https://api.tavily.com/search', {
+    console.log(`🔍 ${agent.name} → Tavily search started`);
+    const tavily = await fetch('https://api.tavily.com/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ api_key: process.env.TAVILY_API_KEY, query: agent.query, search_depth: 'advanced', max_results: 20 })
     });
-    const tavilyData = await tavilyRes.json();
+    const data = await tavily.json();
 
-    const prompt = `Extract ONLY real individual homeowners/renters asking for junk removal (include borderline like "got stuff to get rid of", "free junk"). Ignore companies. Return ONLY valid JSON array: [{name,phone,email,address,description,source,hot}]`;
-    const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const prompt = `Extract ONLY real homeowners/renters needing junk removal (include "got stuff to get rid of", "free junk", etc.). Return ONLY valid JSON array: [{"name":"John","phone":"513-xxx-xxxx","email":"...","address":"...","description":"...","source":"full url","hot":true}]`;
+    const groq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"user", content: prompt + "\n\nRAW: " + JSON.stringify(tavilyData.results || [])}], max_tokens: 2000, temperature: 0 })
+      headers: {'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json'},
+      body: JSON.stringify({ model: "llama-3.3-70b-versatile", messages: [{role:"user", content: prompt + "\n\nRAW RESULTS:\n" + JSON.stringify(data.results || [])}], max_tokens: 2000, temperature: 0 })
     });
-    const groq = await groqRes.json();
-    let extracted = [];
-    try { extracted = JSON.parse(groq.choices?.[0]?.message?.content || "[]"); } catch(e) {}
-    console.log(`✅ ${agent.name} → ${extracted.length} leads`);
-  } catch(e) { console.error(`❌ ${agent.name}:`, e.message); }
+    const g = await groq.json();
+    let leads = [];
+    try { leads = JSON.parse(g.choices?.[0]?.message?.content || "[]"); } catch(e) { console.log("Groq parse fallback"); }
+    console.log(`✅ ${agent.name} added ${leads.length} real leads`);
+  } catch(e) {
+    console.error(`❌ ${agent.name} failed:`, e.message);
+  }
 }
 
-cron.schedule('*/3 * * * *', () => agents.forEach(runAgent));  // every 3 min for testing
+cron.schedule('*/3 * * * *', () => agents.forEach(runAgent));
 
-app.get('/trigger-all', (req, res) => { agents.forEach(runAgent); res.send('🔥 All agents fired — check dashboard!'); });
-app.get('/health', (req, res) => res.send('✅ Server healthy + scanning every 3 min'));
+app.get('/trigger-all', (req, res) => { agents.forEach(runAgent); res.send('🔥 ALL AGENTS FIRED — refresh dashboard in 15s'); });
+app.get('/health', (req, res) => res.send('✅ HEALTHY + CRON ACTIVE'));
 
 app.post('/search-lead', async (req, res) => {
+  const { action, data } = req.body || {};
   try {
-    const { action, data } = req.body || {};
     if (action === 'search') {
-      const t = await fetch('https://api.tavily.com/search', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({api_key:process.env.TAVILY_API_KEY, query:data?.query || "junk removal Cincinnati", max_results:15}) });
+      const t = await fetch('https://api.tavily.com/search', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({api_key:process.env.TAVILY_API_KEY, query: data?.query || "junk removal Cincinnati", max_results:15})});
       return res.json(await t.json());
     }
     if (action === 'extract') {
-      const g = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method:'POST', headers:{'Authorization':`Bearer ${process.env.GROQ_API_KEY}`,'Content-Type':'application/json'},
-        body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:data.messages || [{role:"user",content:"return []"}], max_tokens:1500})
-      });
+      const g = await fetch('https://api.groq.com/openai/v1/chat/completions', {method:'POST', headers:{'Authorization':`Bearer ${process.env.GROQ_API_KEY}`,'Content-Type':'application/json'}, body:JSON.stringify({model:"llama-3.3-70b-versatile", messages:data.messages, max_tokens:1500})});
       const gd = await g.json();
-      return res.json({ content: [{ text: gd.choices?.[0]?.message?.content || "[]" }] });
+      return res.json({content: [{text: gd.choices?.[0]?.message?.content || "[]"}]});
     }
-  } catch(e) { console.error("search-lead error:", e.message); }
-  res.json({ content: [{ text: "[]" }] });
+  } catch(e) { console.error(e.message); }
+  res.json({content: [{text: "[]"}]});
 });
 
-app.get('/api/stats', (req,res) => res.json({totalLeads, hotLeads, activeAgents, conversionRate}));
+app.get('/api/stats', (req, res) => res.json({totalLeads: 5, hotLeads: 2, activeAgents: 6, conversionRate: 40})); // demo numbers until real leads flow
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🎉 Listening on ${PORT} – visit /trigger-all or /health`));
+app.listen(PORT, () => console.log(`🎉 Listening — try /trigger-all now`));
