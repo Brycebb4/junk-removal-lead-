@@ -49,6 +49,24 @@
                 <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="conversionRate">19%</div><div>Est. Conversion</div></div>
             </div>
         </div>
+
+        <div class="template-tools" style="background:white;border-radius:15px;padding:25px;margin-bottom:25px;box-shadow:0 10px 30px rgba(0,0,0,0.2);">
+    <h3 style="margin-bottom:15px;">➕ Manual Lead Entry (Facebook / Nextdoor / Phone calls)</h3>
+    <form id="manualForm">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+            <input type="text" name="name" placeholder="Name (or Anonymous)" required style="padding:12px;border-radius:8px;border:1px solid #ddd;">
+            <input type="text" name="phone" placeholder="Phone" style="padding:12px;border-radius:8px;border:1px solid #ddd;">
+            <input type="email" name="email" placeholder="Email" style="padding:12px;border-radius:8px;border:1px solid #ddd;">
+            <input type="text" name="address" placeholder="City / Address" style="padding:12px;border-radius:8px;border:1px solid #ddd;">
+        </div>
+        <textarea name="description" placeholder="Description (e.g. 'Moving out - full garage cleanout')" rows="3" style="width:100%;margin-top:15px;padding:12px;border-radius:8px;border:1px solid #ddd;"></textarea>
+        <input type="text" name="source" placeholder="Source URL or how you got the lead" style="width:100%;margin-top:10px;padding:12px;border-radius:8px;border:1px solid #ddd;">
+        <label style="margin-top:10px;display:block;">
+            <input type="checkbox" name="hot"> Hot Lead (has phone or email)
+        </label>
+        <button type="submit" style="margin-top:15px;padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">Add Lead Now</button>
+    </form>
+</div>
         <div class="agents-grid" id="agentsGrid"></div>
     </div>
 
@@ -209,5 +227,24 @@
         updateGlobalSummary();
         setInterval(() => { Object.keys(agents).forEach(k => renderLeadsForAgent(k)); }, 3000);
     </script>
+    <script>
+document.getElementById('manualForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+    data.hot = data.hot === 'on';
+    
+    await fetch('/api/add-lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+    
+    alert('Lead saved! Refresh or wait for auto-update.');
+    e.target.reset();
+    // Optional: force refresh dashboard
+    location.reload();
+});
+</script>
 </body>
 </html>
