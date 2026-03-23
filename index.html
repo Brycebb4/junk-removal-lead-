@@ -76,7 +76,7 @@
         <div class="agents-grid" id="agentsGrid"></div>
     </div>
 
-    <!-- LEAD MODAL (unchanged) -->
+    <!-- LEAD MODAL -->
     <div class="modal-overlay" id="leadModal">
         <div class="modal-content">
             <h2 id="modalName">Homeowner Name</h2>
@@ -99,15 +99,19 @@
         </div>
     </div>
 
+    <!-- SOCKET.IO + MAIN SCRIPT -->
+    <script src="/socket.io/socket.io.js"></script>
     <script>
-    let agents = {
-    realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
-    socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
-    marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
-    eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
-    craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] },
-    manual: { name: "Manual Leads", icon: "✍️", scans: 0, leadsList: [] }   // ← THIS WAS MISSING
-};
+        const socket = io();
+        let agents = {
+            realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
+            socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
+            marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
+            eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
+            craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] },
+            manual: { name: "Manual Leads", icon: "✍️", scans: 0, leadsList: [] }
+        };
+
         let currentLead = null;
         let currentKey = null;
 
@@ -119,17 +123,33 @@
 
         const EMAIL_TEMPLATE = `Hi {Name},\n\nI'm ${AGENT_NAME} with ${COMPANY_NAME}. I came across your listing about needing {Description} at {Address}.\n\nWe handle full clean-outs, furniture, appliances, yard waste — everything. Same-day service is usually available, and our pricing is transparent with no hidden fees.\n\nWould you like a free on-site quote? I can text you a couple of quick options or schedule a 10-minute visit today.\n\nJust reply to this email or call/text me directly at ${COMPANY_PHONE}.\n\nThanks for your time — happy to help you get the property ready!\n\nBest,  \n${AGENT_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}\njunkremovalguys394@gmail.com\nhttps://ohio-junk-scan.lovable.app`;
 
-        function loadData() { const saved = localStorage.getItem('junkLeadsData'); if (saved) agents = JSON.parse(saved); }
-        function saveData() { localStorage.setItem('junkLeadsData', JSON.stringify(agents)); }
-        function clearAllLeads() { if(confirm('Clear everything?')) { localStorage.clear(); location.reload(); } }
+        function loadData() {
+            const saved = localStorage.getItem('junkLeadsData');
+            if (saved) Object.assign(agents, JSON.parse(saved));
+        }
+        function saveData() {
+            localStorage.setItem('junkLeadsData', JSON.stringify(agents));
+        }
+
+        async function clearAllLeads() {
+            if (confirm('Clear EVERYTHING (including backend)?')) {
+                await fetch('/api/leads', { method: 'DELETE' });
+                location.reload();
+            }
+        }
 
         function renderAgents() {
-            const grid = document.getElementById('agentsGrid'); grid.innerHTML = '';
+            const grid = document.getElementById('agentsGrid');
+            grid.innerHTML = '';
             Object.keys(agents).forEach(key => {
                 const a = agents[key];
-                const card = document.createElement('div'); card.className = 'agent-card';
+                const card = document.createElement('div');
+                card.className = 'agent-card';
                 card.innerHTML = `
-                    <div class="agent-header"><div class="agent-icon">${a.icon}</div><div><h3>${a.name}</h3><span style="background:#d4edda;color:#155724;padding:5px 12px;border-radius:20px;font-size:0.8em;">Active</span></div></div>
+                    <div class="agent-header">
+                        <div class="agent-icon">${a.icon}</div>
+                        <div><h3>${a.name}</h3><span style="background:#d4edda;color:#155724;padding:5px 12px;border-radius:20px;font-size:0.8em;">Active</span></div>
+                    </div>
                     <div class="metrics">
                         <div class="metric"><div class="metric-value">${a.scans}</div><div>Scans</div></div>
                         <div class="metric"><div class="metric-value">${a.leadsList.length}</div><div>Leads</div></div>
@@ -149,7 +169,8 @@
             const section = document.getElementById(`${key}-leads-section`);
             section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
             if (agents[key].leadsList.length === 0) {
-                section.innerHTML += '<p class="no-leads">No leads yet. Click Scan Now!</p>'; return;
+                section.innerHTML += '<p class="no-leads">No leads yet. Click Scan Now!</p>';
+                return;
             }
             agents[key].leadsList.forEach(lead => {
                 const div = document.createElement('div');
@@ -161,25 +182,35 @@
         }
 
         function showLeadModal(lead, key) {
-            currentLead = lead; currentKey = key;
+            currentLead = lead;
+            currentKey = key;
             document.getElementById('modalName').textContent = lead.name || 'Homeowner';
             document.getElementById('modalDesc').textContent = lead.description || '';
             document.getElementById('modalAddress').textContent = lead.address || '';
-            document.getElementById('modalPhone').textContent = lead.phone || 'No phone';
-            document.getElementById('modalPhone').href = lead.phone ? `tel:${lead.phone}` : '#';
-            document.getElementById('modalEmail').textContent = lead.email || 'No email';
-            document.getElementById('modalEmail').href = lead.email ? `mailto:${lead.email}` : '#';
+            const phoneEl = document.getElementById('modalPhone');
+            phoneEl.textContent = lead.phone || 'No phone';
+            phoneEl.href = lead.phone ? `tel:${lead.phone}` : '#';
+            const emailEl = document.getElementById('modalEmail');
+            emailEl.textContent = lead.email || 'No email';
+            emailEl.href = lead.email ? `mailto:${lead.email}` : '#';
             document.getElementById('modalSourceLink').href = lead.source || '#';
+            const statusEl = document.getElementById('modalStatus');
+            statusEl.textContent = lead.hot ? '🔥 Hot Lead' : 'Warm Lead';
+            statusEl.style.color = lead.hot ? '#28a745' : '#f39c12';
             document.getElementById('contactBtn').onclick = () => {
-                if(confirm('Mark as contacted and remove?')) {
+                if (confirm('Mark as contacted and remove?')) {
                     agents[key].leadsList = agents[key].leadsList.filter(l => l !== lead);
-                    saveData(); renderAgents(); closeModal();
+                    saveData();
+                    renderAgents();
+                    closeModal();
                 }
             };
             document.getElementById('leadModal').classList.add('active');
         }
 
-        function closeModal() { document.getElementById('leadModal').classList.remove('active'); }
+        function closeModal() {
+            document.getElementById('leadModal').classList.remove('active');
+        }
 
         function textLead() {
             if (!currentLead?.phone) return alert("No phone");
@@ -213,24 +244,29 @@
                         agents[k].scans++;
                     }
                 });
-                
                 saveData();
                 renderAgents();
+                statusEl.textContent = `Last scanned: ${new Date().toLocaleTimeString()}`;
+                statusEl.style.color = "#28a745";
             } catch(e) {
                 statusEl.textContent = "Scan failed — check Render logs";
                 statusEl.style.color = "#e74c3c";
+                console.error(e);
             }
-function updateGlobalSummary() {
-    let total = 0, hot = 0;
-    Object.values(agents).forEach(a => { 
-        total += a.leadsList.length; 
-        hot += a.leadsList.filter(l=>l.hot).length; 
-    });
-    document.getElementById('totalLeads').textContent = total;
-    document.getElementById('hotLeads').textContent = hot;
-    document.getElementById('activeAgents').textContent = Object.keys(agents).length;  // now shows 6
-}
-        // MANUAL FORM SUBMIT
+        }
+
+        function updateGlobalSummary() {
+            let total = 0, hot = 0;
+            Object.values(agents).forEach(a => { 
+                total += a.leadsList.length; 
+                hot += a.leadsList.filter(l => l.hot).length; 
+            });
+            document.getElementById('totalLeads').textContent = total;
+            document.getElementById('hotLeads').textContent = hot;
+            document.getElementById('activeAgents').textContent = Object.keys(agents).length;
+        }
+
+        // MANUAL FORM
         document.getElementById('manualForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const formData = new FormData(e.target);
@@ -251,7 +287,15 @@ function updateGlobalSummary() {
             renderAgents();
         });
 
-        // BOOT
+        // REAL-TIME UPDATES FROM SERVER
+        socket.on('leadsUpdated', (data) => {
+            Object.keys(agents).forEach(k => {
+                if (data[k]) agents[k].leadsList = data[k];
+            });
+            renderAgents();
+        });
+
+        // INIT
         async function init() {
             loadData();
             try {
@@ -261,73 +305,9 @@ function updateGlobalSummary() {
             } catch(e) {}
             renderAgents();
             updateGlobalSummary();
-            setInterval(() => { Object.keys(agents).forEach(k => renderLeadsForAgent(k)); }, 3000);
         }
 
         init();
-        <script>
-    // ... (keep all your existing code: agents object, loadData, saveData, renderAgents, renderLeadsForAgent, showLeadModal, etc.)
-
-    // === NEW: SCAN FUNCTION (was missing/incomplete) ===
-    function scanAgent(key) {
-        const a = agents[key];
-        a.scans++;
-        // Quick demo lead so you see something immediately
-        if (a.leadsList.length < 5) {
-            a.leadsList.unshift({
-                name: "New Homeowner",
-                description: "Garage cleanout / moving junk",
-                phone: "(513) 555-12" + Math.floor(Math.random()*90 + 10),
-                email: "",
-                address: "Cincinnati area",
-                hot: Math.random() > 0.5,
-                source: "Simulated Scan"
-            });
-        }
-        document.getElementById(key + '-status').textContent = `Last scanned: ${new Date().toLocaleTimeString()}`;
-        saveData();
-        renderAgents();
-    }
-
-    // === NEW: COMPLETE MODAL SETUP (your version was truncated) ===
-    function showLeadModal(lead, key) {
-        currentLead = lead;
-        currentKey = key;
-        document.getElementById('modalName').textContent = lead.name || 'Homeowner';
-        document.getElementById('modalDesc').textContent = lead.description || 'No description';
-        document.getElementById('modalAddress').textContent = lead.address || 'Local area';
-        const phoneEl = document.getElementById('modalPhone');
-        phoneEl.textContent = lead.phone || 'No phone';
-        phoneEl.href = lead.phone ? `tel:${lead.phone}` : '#';
-        const emailEl = document.getElementById('modalEmail');
-        emailEl.textContent = lead.email || 'No email';
-        emailEl.href = lead.email ? `mailto:${lead.email}` : '#';
-        document.getElementById('modalSourceLink').href = lead.source || '#';
-        document.getElementById('modalStatus').textContent = lead.hot ? 'Hot Lead 🔥' : 'Warm Lead';
-        document.getElementById('leadModal').classList.add('active');
-    }
-
-    function closeModal() {
-        document.getElementById('leadModal').classList.remove('active');
-    }
-
-    function textLead() { alert('Text template copied to clipboard (ready for real SMS)'); }
-    function emailLead() { alert('Email template copied (ready for real email)'); }
-    function copyCallTextScript() { alert('Call script copied!'); }
-
-    // === FIX: Initialize everything on load ===
-    document.addEventListener('DOMContentLoaded', () => {
-        loadData();
-        renderAgents();
-        updateGlobalSummary(); // if you have this function; otherwise remove this line
-        console.log('✅ Agents grid initialized – should now be visible');
-    });
-
-    // Optional: auto-refresh every 30s (nice for demo)
-    setInterval(() => {
-        renderAgents();
-    }, 30000);
-</script>
     </script>
 </body>
 </html>
