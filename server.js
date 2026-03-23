@@ -12,32 +12,32 @@ let leadsStore = {
     realEstate: [], socialMedia: [], marketplace: [], eventSeason: [], craigslist: []
 };
 
-// FULL AGENTS WITH REAL QUERIES (this was the missing piece)
+// VERIFIED — EXACT LOCATIONS COPIED FROM YOUR INDEX.HTML HEADER
 const agents = [
     { 
         id: "realEstate", 
         name: "Real Estate Monitor", 
-        query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\" OR \"someone remove my trash\" OR \"got stuff to get rid of\" OR \"free junk\" OR \"unwanted items\") (Ohio OR Dayton OR Cincinnati OR Kentucky OR \"southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR Cold Spring OR Silver Grove OR Melbourne OR Alexandria OR Fort Thomas OR Southgate OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk" 
+        query: "(\"I need junk removed\" OR \"need someone to haul my junk\" OR \"looking for junk removal\" OR \"haul away my junk\" OR \"estate cleanout needed\" OR \"moving junk removal\" OR \"someone remove my trash\" OR \"got stuff to get rid of\" OR \"free junk\" OR \"unwanted items\") (Dayton OR Cincinnati OR \"Northern Kentucky\" OR \"Southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR \"Cold Spring\" OR \"Silver Grove\" OR Melbourne OR Alexandria OR \"Fort Thomas\" OR Southgate OR Independence) -\"we offer\" -service -company -\"junk removal service\" -business -loadup -gotjunk" 
     },
     { 
         id: "socialMedia", 
         name: "Social Media Scanner", 
-        query: "(need junk hauled OR junk removal OR haul my trash OR estate cleanout OR garage cleanout OR \"need someone to haul\") (Facebook OR Reddit OR Nextdoor) (Cincinnati OR Dayton OR Florence OR Kentucky OR Ohio)" 
+        query: "(need junk hauled OR junk removal OR haul my trash OR estate cleanout OR garage cleanout OR \"need someone to haul\") (Facebook OR Reddit OR Nextdoor) (Dayton OR Cincinnati OR \"Northern Kentucky\" OR \"Southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR \"Cold Spring\" OR \"Silver Grove\" OR Melbourne OR Alexandria OR \"Fort Thomas\" OR Southgate OR Independence)" 
     },
     { 
         id: "marketplace", 
         name: "Marketplace Hunter", 
-        query: "(junk removal OR haul junk OR clean out garage OR moving sale junk OR \"need junk hauled\") (OfferUp OR Letgo OR \"Facebook Marketplace\") (Cincinnati OR Dayton OR Florence OR Kentucky)" 
+        query: "(junk removal OR haul junk OR clean out garage OR moving sale junk OR \"need junk hauled\") (OfferUp OR Letgo OR \"Facebook Marketplace\") (Dayton OR Cincinnati OR \"Northern Kentucky\" OR \"Southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR \"Cold Spring\" OR \"Silver Grove\" OR Melbourne OR Alexandria OR \"Fort Thomas\" OR Southgate OR Independence)" 
     },
     { 
         id: "eventSeason", 
         name: "Event & Seasonal Tracker", 
-        query: "(garage sale OR moving sale OR estate sale OR spring cleanout OR fall cleanout OR \"need junk removed\" OR \"haul away\") (Cincinnati OR Dayton OR \"Northern Kentucky\" OR Florence)" 
+        query: "(garage sale OR moving sale OR estate sale OR spring cleanout OR fall cleanout OR \"need junk removed\" OR \"haul away\") (Dayton OR Cincinnati OR \"Northern Kentucky\" OR \"Southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR \"Cold Spring\" OR \"Silver Grove\" OR Melbourne OR Alexandria OR \"Fort Thomas\" OR Southgate OR Independence)" 
     },
     { 
         id: "craigslist", 
         name: "Craigslist Scanner", 
-        query: "(junk removal OR haul junk OR cleanout OR \"need junk hauled\") (Cincinnati OR Dayton OR Kentucky OR Florence) site:craigslist.org" 
+        query: "(junk removal OR haul junk OR cleanout OR \"need junk hauled\") (Dayton OR Cincinnati OR \"Northern Kentucky\" OR \"Southern Indiana\" OR Florence OR Erlanger OR Covington OR Newport OR Bullittsville OR Hebron OR Lawrenceburg OR Greendale OR Petersburg OR Idlewild OR Shawnee OR Addyston OR Wilder OR \"Cold Spring\" OR \"Silver Grove\" OR Melbourne OR Alexandria OR \"Fort Thomas\" OR Southgate OR Independence) site:craigslist.org" 
     }
 ];
 
@@ -75,7 +75,7 @@ async function runAgent(agent) {
     } catch(e) { console.error(e.message); }
 }
 
-// Cron every 5 min + manual trigger
+// Auto + manual trigger
 cron.schedule('*/5 * * * *', () => agents.forEach(runAgent));
 app.get('/trigger-all', async (req, res) => { 
     await Promise.all(agents.map(runAgent)); 
@@ -83,4 +83,4 @@ app.get('/trigger-all', async (req, res) => {
 });
 app.get('/api/leads', (req, res) => res.json(leadsStore));
 
-app.listen(process.env.PORT || 3000, () => console.log('🚀 Server ready — real leads now flow to dashboard'));
+app.listen(process.env.PORT || 3000, () => console.log('🚀 Server ready — now scanning your EXACT locations from index.html'));
