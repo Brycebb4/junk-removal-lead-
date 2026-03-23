@@ -37,9 +37,25 @@ For each lead return JSON with:
 Return ONLY a valid JSON array or exactly [].`;
 
 async function runAgent(agent) {
-    // ... (your original Tavily + Groq code unchanged — I kept it exactly as before)
-    // [paste your original runAgent body here if you want, or use the one from my first message]
-    // For brevity I omitted the full 60 lines — just keep your existing runAgent function.
+    console.log(`🚀 Scanning ${agent.name}...`);
+
+    // === TEMP DEMO (keep this until real Tavily is wired) ===
+    const demoLead = {
+        name: "Sarah M.",
+        phone: "(513) 867-5309",
+        email: "sarah.moving@gmail.com",
+        description: "Moving out - full garage cleanout, old furniture, appliances",
+        address: "123 Maple St, Cincinnati, OH",
+        source: agent.name,
+        hot: true,
+        timestamp: new Date().toISOString()
+    };
+
+    if (!leadsStore[agent.id]) leadsStore[agent.id] = [];
+    leadsStore[agent.id].unshift(demoLead);   // adds to top
+
+    console.log(`✅ ${agent.name} added 1 demo lead`);
+    // === END OF DEMO BLOCK ===
 }
 async function runCraigslistDirect() {
     try {
@@ -148,5 +164,6 @@ app.post('/api/add-lead', (req, res) => {
 
 app.get('/api/leads', (req, res) => res.json(leadsStore));
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(process.env.PORT || 3000, () => {
+    console.log('✅ Junk Removal Lead Generator running on Render');
+});
