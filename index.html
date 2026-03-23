@@ -5,18 +5,99 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Junk Removal Lead Generator</title>
     <style>
-        /* (your existing styles — unchanged) */
-        .scan-status { font-size: 0.85em; margin-top: 8px; color: #27ae60; font-weight: 600; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 20px; color: #333; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { text-align: center; color: white; margin-bottom: 30px; }
+        .header h1 { font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
+        .dashboard-summary { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .summary-card { text-align: center; padding: 20px; border-radius: 10px; color: white; }
+        .summary-value { font-size: 2.5em; font-weight: 700; }
+        .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
+        .agent-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+        .agent-header { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        .agent-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-right: 15px; background: #f0f0f0; }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .metric { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+        .metric-value { font-size: 1.5em; font-weight: 700; color: #2c3e50; }
+        .btn { padding: 14px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
+        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #3498db; border-radius: 8px; cursor: pointer; }
+        .lead-item:hover { background: #e3f2fd; }
+        .lead-contact { font-size: 0.85em; color: #28a745; margin-top: 4px; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
+        .no-leads { color: #999; font-style: italic; padding: 15px; text-align: center; }
+        .scan-status { font-size: 0.85em; margin-top: 8px; font-weight: 600; }
+        .template-tools { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 12px; }
+        .template-tools h4 { margin-bottom: 12px; color: #2c3e50; }
     </style>
 </head>
 <body>
-    <!-- (your header, summary, modal with templates — unchanged) -->
-    <!-- ... (keep everything exactly as you have it now) ... -->
+    <div class="container">
+        <div class="header">
+            <h1>Junk Removal Lead Generator</h1>
+            <p>Scanning Live Sources: Craigslist, Reddit, Facebook, Nextdoor, OfferUp, Letgo, Real Estate & More (Dayton • Cincinnati • Northern Kentucky • Southern Indiana • Florence • Erlanger • Covington • Newport • Bullittsville • Hebron • Lawrenceburg • Greendale • Petersburg • Idlewild • Shawnee • Addyston • Wilder • Cold Spring • Silver Grove • Melbourne • Alexandria • Fort Thomas • Southgate • Independence & surrounding rural areas)</p>
+            <button onclick="clearAllLeads()" style="margin-top:15px;padding:12px 24px;background:#e74c3c;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Clear All Leads (Fresh Start)</button>
+        </div>
+        <div class="dashboard-summary">
+            <div class="summary-grid">
+                <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div>Total Leads Today</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div>Hot Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="activeAgents">6</div><div>Active Agents</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="conversionRate">19%</div><div>Est. Conversion</div></div>
+            </div>
+        </div>
+        <div class="agents-grid" id="agentsGrid"></div>
+    </div>
 
-    <div class="agents-grid" id="agentsGrid"></div>
+    <!-- LEAD MODAL -->
+    <div class="modal-overlay" id="leadModal">
+        <div class="modal-content">
+            <h2 id="modalName">Homeowner Name</h2>
+            <p><strong>Description:</strong> <span id="modalDesc"></span></p>
+            <p><strong>Address:</strong> <span id="modalAddress"></span></p>
+            <p><strong>📞 Phone:</strong> <a id="modalPhone" href="#" style="color:#28a745;font-weight:600;">Call Now</a></p>
+            <p><strong>✉️ Email:</strong> <a id="modalEmail" href="#" style="color:#3498db;font-weight:600;">Email Now</a></p>
+            <p><strong>🔗 Original Post:</strong> <a id="modalSourceLink" href="#" target="_blank" style="color:#e74c3c;font-weight:600;">Open Craigslist/Facebook Post →</a></p>
+            <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;color:#28a745;">🔥 Hot Lead</span></p>
+            
+            <div class="template-tools">
+                <h4>🚀 One-Click Professional Messages</h4>
+                <button onclick="textLead()" style="padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">💬 Send Text Message (Template)</button>
+                <button onclick="emailLead()" style="padding:14px;background:#3498db;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">✉️ Send Professional Email (Template)</button>
+                <button onclick="copyCallTextScript()" style="padding:14px;background:#f39c12;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">📋 Copy Call/Text Script (Phone or SMS)</button>
+            </div>
+            
+            <button id="contactBtn" style="margin:15px 0;padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">✅ Mark as Contacted + Remove</button>
+            <button onclick="closeModal()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;width:100%;">Close Window</button>
+        </div>
+    </div>
 
     <script>
-        // ... (your existing agents object, currentLead, templates, loadData, saveData, renderLeadsForAgent, showLeadModal, textLead, emailLead, copyCallTextScript — all unchanged) ...
+        let agents = {
+            realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
+            socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
+            marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
+            eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
+            craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] }
+        };
+
+        let currentLead = null;
+        let currentKey = null;
+
+        const COMPANY_NAME = "Junk Removal Guys";
+        const COMPANY_PHONE = "(513) 555-1234";
+        const AGENT_NAME = "the Junk Removal Guys team";
+
+        const CALL_TEXT_TEMPLATE = `Hi {Name}, this is ${AGENT_NAME} with ${COMPANY_NAME}. I saw your post about needing {Description} at {Address}.\n\nWe specialize in fast clean-outs with same-day service and competitive pricing.\n\nWould you like a free no-obligation quote today? I can swing by or give you exact pricing over the phone right now. Just reply here or call me back at ${COMPANY_PHONE}.\n\nLooking forward to helping you get it cleared out quickly!`;
+
+        const EMAIL_TEMPLATE = `Hi {Name},\n\nI'm ${AGENT_NAME} with ${COMPANY_NAME}. I came across your listing about needing {Description} at {Address}.\n\nWe handle full clean-outs, furniture, appliances, yard waste — everything. Same-day service is usually available, and our pricing is transparent with no hidden fees.\n\nWould you like a free on-site quote? I can text you a couple of quick options or schedule a 10-minute visit today.\n\nJust reply to this email or call/text me directly at ${COMPANY_PHONE}.\n\nThanks for your time — happy to help you get the property ready!\n\nBest,  \n${AGENT_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}\njunkremovalguys394@gmail.com\nhttps://ohio-junk-scan.lovable.app`;
+
+        function loadData() { const saved = localStorage.getItem('junkLeadsData'); if (saved) agents = JSON.parse(saved); }
+        function saveData() { localStorage.setItem('junkLeadsData', JSON.stringify(agents)); }
+        function clearAllLeads() { if(confirm('Clear everything?')) { localStorage.clear(); location.reload(); } }
 
         function renderAgents() {
             const grid = document.getElementById('agentsGrid'); grid.innerHTML = '';
@@ -25,7 +106,11 @@
                 const card = document.createElement('div'); card.className = 'agent-card';
                 card.innerHTML = `
                     <div class="agent-header"><div class="agent-icon">${a.icon}</div><div><h3>${a.name}</h3><span style="background:#d4edda;color:#155724;padding:5px 12px;border-radius:20px;font-size:0.8em;">Active</span></div></div>
-                    <div class="metrics">... (your metrics) ...</div>
+                    <div class="metrics">
+                        <div class="metric"><div class="metric-value">${a.scans}</div><div>Scans</div></div>
+                        <div class="metric"><div class="metric-value">${a.leadsList.length}</div><div>Leads</div></div>
+                        <div class="metric"><div class="metric-value">${a.leadsList.filter(l=>l.hot).length}</div><div>Hot</div></div>
+                    </div>
                     <button class="btn" onclick="scanAgent('${key}')">Scan Now</button>
                     <div class="scan-status" id="${key}-status">Last scanned: Never</div>
                     <div class="leads-section" id="${key}-leads-section"></div>
@@ -34,6 +119,58 @@
                 renderLeadsForAgent(key);
             });
             updateGlobalSummary();
+        }
+
+        function renderLeadsForAgent(key) {
+            const section = document.getElementById(`${key}-leads-section`);
+            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
+            if (agents[key].leadsList.length === 0) {
+                section.innerHTML += '<p class="no-leads">No leads yet. Click Scan Now!</p>'; return;
+            }
+            agents[key].leadsList.forEach(lead => {
+                const div = document.createElement('div');
+                div.className = 'lead-item';
+                div.innerHTML = `🔥 <strong>${lead.name || 'Homeowner'}</strong> – ${lead.description ? lead.description.substring(0,60)+'...' : 'Junk removal needed'}<div class="lead-contact">📞 ${lead.phone || '—'} &nbsp;&nbsp; ✉️ ${lead.email || '—'}</div>`;
+                div.onclick = () => showLeadModal(lead, key);
+                section.appendChild(div);
+            });
+        }
+
+        function showLeadModal(lead, key) {
+            currentLead = lead; currentKey = key;
+            document.getElementById('modalName').textContent = lead.name || 'Homeowner';
+            document.getElementById('modalDesc').textContent = lead.description || '';
+            document.getElementById('modalAddress').textContent = lead.address || '';
+            document.getElementById('modalPhone').textContent = lead.phone || 'No phone';
+            document.getElementById('modalPhone').href = lead.phone ? `tel:${lead.phone}` : '#';
+            document.getElementById('modalEmail').textContent = lead.email || 'No email';
+            document.getElementById('modalEmail').href = lead.email ? `mailto:${lead.email}` : '#';
+            document.getElementById('modalSourceLink').href = lead.source || '#';
+            document.getElementById('contactBtn').onclick = () => {
+                if(confirm('Mark as contacted and remove?')) {
+                    agents[key].leadsList = agents[key].leadsList.filter(l => l !== lead);
+                    saveData(); renderAgents(); closeModal();
+                }
+            };
+            document.getElementById('leadModal').classList.add('active');
+        }
+
+        function closeModal() { document.getElementById('leadModal').classList.remove('active'); }
+
+        function textLead() {
+            if (!currentLead?.phone) return alert("No phone");
+            const msg = CALL_TEXT_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
+            window.location.href = `sms:${currentLead.phone}?body=${encodeURIComponent(msg)}`;
+        }
+        function emailLead() {
+            if (!currentLead?.email) return alert("No email");
+            const body = EMAIL_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
+            window.open(`mailto:${currentLead.email}?subject=${encodeURIComponent(`Free Junk Removal Quote - ${currentLead.address}`)}&body=${encodeURIComponent(body)}`, '_blank');
+        }
+        function copyCallTextScript() {
+            if (!currentLead) return;
+            const script = CALL_TEXT_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
+            navigator.clipboard.writeText(script).then(() => alert("✅ Script copied!"));
         }
 
         async function scanAgent(key) {
@@ -51,28 +188,26 @@
                 });
                 
                 saveData();
-                renderAgents();   // this refreshes ALL statuses
-                
-                // Message now appears UNDER "Last scanned:" instead of popup
-                Object.keys(agents).forEach(k => {
-                    const el = document.getElementById(`${k}-status`);
-                    const count = agents[k].leadsList.length;
-                    el.textContent = count > 0 
-                        ? `Scanned just now — ${count} real leads added` 
-                        : `Scanned just now — 0 leads (try again in 5 min)`;
-                    el.style.color = count > 0 ? "#27ae60" : "#e74c3c";
-                });
+                renderAgents();
             } catch(e) {
-                const el = document.getElementById(`${key}-status`);
-                el.textContent = "Scan failed — check Render logs (API keys?)";
-                el.style.color = "#e74c3c";
+                const statusEl = document.getElementById(`${key}-status`);
+                statusEl.textContent = "Scan failed — check Render logs";
+                statusEl.style.color = "#e74c3c";
             }
         }
 
-        // ... (rest of your script unchanged) ...
+        function updateGlobalSummary() {
+            let total = 0, hot = 0;
+            Object.values(agents).forEach(a => { total += a.leadsList.length; hot += a.leadsList.filter(l=>l.hot).length; });
+            document.getElementById('totalLeads').textContent = total;
+            document.getElementById('hotLeads').textContent = hot;
+        }
+
+        // BOOT
         renderAgents();
         loadData();
         updateGlobalSummary();
+        setInterval(() => { Object.keys(agents).forEach(k => renderLeadsForAgent(k)); }, 3000);
     </script>
 </body>
 </html>
