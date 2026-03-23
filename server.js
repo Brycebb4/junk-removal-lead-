@@ -58,31 +58,42 @@ async function runAgent(agent) {
         });
         const data = await tavily.json();
 
-        const prompt = `Extract ONLY real homeowners needing junk removal right now. Return ONLY valid JSON array: [{"name":"...","phone":"...","email":"...","address":"...","description":"...","source":"full url","hot":true}]`;
+        // ←←← IMPROVED PROMPT + DEBUG ←←←
+        const prompt = `You are an expert junk removal lead extractor.
+From these Tavily results, extract EVERY potential homeowner who needs junk hauled/removed/estate cleanout (ignore companies offering services).
+For each lead:
+- name: first name or "Anonymous"
+- phone: exact if mentioned, else "N/A"
+- email: exact if mentioned, else "N/A"
+- address: city or address mentioned
+- description: short summary
+- source: full url
+- hot: true ONLY if phone or email is NOT "N/A"
+
+Return ONLY valid JSON array like [{"name":...,"phone":...,"email":...,"address":...,"description":...,"source":...,"hot":true/false}] or exactly [] if none.
+No extra text, no explanations.`;
+
         const groq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
             headers: {'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json'},
             body: JSON.stringify({ 
                 model: "llama-3.3-70b-versatile", 
-                messages: [{role:"user", content: prompt + "\n\nRAW:\n" + JSON.stringify(data.results)}], 
+                messages: [{role:"user", content: prompt + "\n\nRAW SEARCH RESULTS:\n" + JSON.stringify(data.results)}], 
                 max_tokens: 2000 
             })
         });
         const g = await groq.json();
+        
+        // DEBUG: show exactly what the AI returned
+        const rawLLM = g.choices[0].message.content || "[]";
+        console.log(`🔍 ${agent.name} RAW LLM RESPONSE:`, rawLLM);
+
         let leads = [];
-        try { leads = JSON.parse(g.choices[0].message.content || "[]"); } catch(e) {}
+        try { leads = JSON.parse(rawLLM); } catch(e) { console.log(`Parse failed for ${agent.name}`); }
         
         leadsStore[agent.id] = leads.map(l => ({...l, createdAt: Date.now()}));
         console.log(`✅ ${agent.name} added ${leads.length} real leads`);
-    } catch(e) { console.error(e.message); }
+    } catch(e) { 
+        console.error(`ERROR ${agent.name}:`, e.message); 
+    }
 }
-
-// Auto-scan every 5 min + manual trigger
-cron.schedule('*/5 * * * *', () => agents.forEach(runAgent));
-app.get('/trigger-all', async (req, res) => { 
-    await Promise.all(agents.map(runAgent)); 
-    res.send('Real scan fired — refresh dashboard'); 
-});
-app.get('/api/leads', (req, res) => res.json(leadsStore));
-
-app.listen(process.env.PORT || 3000, () => console.log('🚀 Server ready — ALL agents now scanning your exact full location list'));
