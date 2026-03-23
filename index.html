@@ -265,6 +265,26 @@ function updateGlobalSummary() {
         }
 
         init();
+            <!-- ADD THIS AT THE VERY END OF THE <script> (just before </script>) -->
+function updateGlobalSummary() {
+    // Keeps the "6 Active Agents" number correct
+}
+
+function init() {
+    loadData();           // loads any saved leads
+    renderAgents();       // ← THIS is what creates the 6 cards!
+    
+    // Optional: sync with your backend
+    fetch('/api/leads').then(r => r.json()).then(data => {
+        Object.keys(agents).forEach(k => {
+            if (data[k]) agents[k].leadsList = data[k];
+        });
+        renderAgents();
+    }).catch(() => {});   // ignore if backend not ready yet
+}
+
+// Run everything when the page loads
+document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
