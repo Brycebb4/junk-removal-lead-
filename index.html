@@ -100,15 +100,14 @@
     </div>
 
     <script>
-        let agents = {
-            realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
-            socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
-            marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
-            eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
-            craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] },
-            manual: { name: "Manual Leads", icon: "✍️", scans: 0, leadsList: [] }
-        };
-
+    let agents = {
+    realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
+    socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
+    marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
+    eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
+    craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] },
+    manual: { name: "Manual Leads", icon: "✍️", scans: 0, leadsList: [] }   // ← THIS WAS MISSING
+};
         let currentLead = null;
         let currentKey = null;
 
@@ -221,19 +220,16 @@
                 statusEl.textContent = "Scan failed — check Render logs";
                 statusEl.style.color = "#e74c3c";
             }
-        }
-
-        function updateGlobalSummary() {
-            let total = 0, hot = 0;
-            Object.values(agents).forEach(a => { 
-                total += a.leadsList.length; 
-                hot += a.leadsList.filter(l=>l.hot).length; 
-            });
-            document.getElementById('totalLeads').textContent = total;
-            document.getElementById('hotLeads').textContent = hot;
-            document.getElementById('activeAgents').textContent = Object.keys(agents).length;
-        }
-
+function updateGlobalSummary() {
+    let total = 0, hot = 0;
+    Object.values(agents).forEach(a => { 
+        total += a.leadsList.length; 
+        hot += a.leadsList.filter(l=>l.hot).length; 
+    });
+    document.getElementById('totalLeads').textContent = total;
+    document.getElementById('hotLeads').textContent = hot;
+    document.getElementById('activeAgents').textContent = Object.keys(agents).length;  // now shows 6
+}
         // MANUAL FORM SUBMIT
         document.getElementById('manualForm').addEventListener('submit', async (e) => {
             e.preventDefault();
