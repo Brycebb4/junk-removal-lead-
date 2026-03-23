@@ -41,7 +41,6 @@ async function runAgent(agent) {
     // [paste your original runAgent body here if you want, or use the one from my first message]
     // For brevity I omitted the full 60 lines — just keep your existing runAgent function.
 }
-
 async function runCraigslistDirect() {
     try {
         console.log('→ Craigslist Direct scraping (Free Stuff pages)...');
@@ -51,19 +50,27 @@ async function runCraigslistDirect() {
         for (const city of cities) {
             const url = `https://${city}.craigslist.org/search/zip`;
             const res = await axios.get(url, {
-                headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' },
-                timeout: 10000
+                headers: { 
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36',
+                    'Accept': 'text/html'
+                },
+                timeout: 15000
             });
             const $ = cheerio.load(res.data);
             const posts = [];
 
-            // CL selector (2026 structure) — tweak .result-row / .result-title if zero results
-            $('div.result-row, li.result-row, .cl-results-page .result').slice(0, 20).each((i, el) => {
-                const title = $(el).find('a.result-title, .result-title a').first().text().trim() || 'Free items';
-                let link = $(el).find('a').first().attr('href');
+            // 2026-proof selectors (covers old + new CL structure)
+            $('li.cl-static-search-result, li.result-row, .result-row, div.cl-result').each((i, el) => {
+                const title = $(el).find('.cl-search-result-title, a.result-title, .result-title').first().text().trim() || 
+                              $(el).attr('data-title') || 'Free item';
+                let link = $(el).find('a').first().attr('href') || $(el).attr('data-href');
                 if (link && !link.startsWith('http')) link = `https://${city}.craigslist.org${link}`;
-                const desc = $(el).find('.result-description, .result-info').text().trim().substring(0, 150) || 'Free stuff / curb alert - potential haul lead';
-                if (title.toLowerCase().includes('free') || title.toLowerCase().includes('curb') || desc.toLowerCase().includes('junk')) {
+                
+                const metaText = $(el).text().trim();
+                const desc = metaText.substring(0, 150) || 'Free stuff / curb alert - potential junk haul';
+
+                if (title.toLowerCase().match(/free|curb|junk|haul|cleanout|moving|estate|garage/i) || 
+                    metaText.toLowerCase().includes('free')) {
                     posts.push({ title, link, desc });
                 }
             });
@@ -72,10 +79,13 @@ async function runCraigslistDirect() {
             console.log(`📊 ${city} Craigslist: ${posts.length} free/junk posts`);
         }
 
-        // Send to Groq with improved prompt
+        // Send to Groq
         const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 'Content-Type': 'application/json' },
+            headers: { 
+                'Authorization': `Bearer ${process.env.GROQ_API_KEY}`, 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({
                 model: "llama-3.3-70b-versatile",
                 messages: [{ role: "user", content: LEAD_PROMPT + "\n\nRAW CL POSTS:\n" + rawPosts }],
@@ -89,7 +99,10 @@ async function runCraigslistDirect() {
         console.log(`RAW LLM RESPONSE (Craigslist Direct):`, rawLLM);
 
         let leads = [];
-        try { leads = JSON.parse(rawLLM); if (!Array.isArray(leads)) leads = []; } catch(e) {}
+        try { 
+            leads = JSON.parse(rawLLM); 
+            if (!Array.isArray(leads)) leads = []; 
+        } catch(e) {}
         
         leadsStore.craigslist = leads.map(l => ({...l, createdAt: Date.now()}));
         console.log(`✅ Craigslist Direct added ${leads.length} real leads`);
