@@ -6,7 +6,9 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "node-cron": "^3.0.3"
+    "node-cron": "^3.0.3",
+    "axios": "^1.7.7",
+    "cheerio": "^1.0.0-rc.12"
   },
   "engines": {
     "node": "20.x"
