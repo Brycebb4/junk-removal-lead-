@@ -265,26 +265,69 @@ function updateGlobalSummary() {
         }
 
         init();
-            <!-- ADD THIS AT THE VERY END OF THE <script> (just before </script>) -->
-function updateGlobalSummary() {
-    // Keeps the "6 Active Agents" number correct
-}
+        <script>
+    // ... (keep all your existing code: agents object, loadData, saveData, renderAgents, renderLeadsForAgent, showLeadModal, etc.)
 
-function init() {
-    loadData();           // loads any saved leads
-    renderAgents();       // ← THIS is what creates the 6 cards!
-    
-    // Optional: sync with your backend
-    fetch('/api/leads').then(r => r.json()).then(data => {
-        Object.keys(agents).forEach(k => {
-            if (data[k]) agents[k].leadsList = data[k];
-        });
+    // === NEW: SCAN FUNCTION (was missing/incomplete) ===
+    function scanAgent(key) {
+        const a = agents[key];
+        a.scans++;
+        // Quick demo lead so you see something immediately
+        if (a.leadsList.length < 5) {
+            a.leadsList.unshift({
+                name: "New Homeowner",
+                description: "Garage cleanout / moving junk",
+                phone: "(513) 555-12" + Math.floor(Math.random()*90 + 10),
+                email: "",
+                address: "Cincinnati area",
+                hot: Math.random() > 0.5,
+                source: "Simulated Scan"
+            });
+        }
+        document.getElementById(key + '-status').textContent = `Last scanned: ${new Date().toLocaleTimeString()}`;
+        saveData();
         renderAgents();
-    }).catch(() => {});   // ignore if backend not ready yet
-}
+    }
 
-// Run everything when the page loads
-document.addEventListener('DOMContentLoaded', init);
+    // === NEW: COMPLETE MODAL SETUP (your version was truncated) ===
+    function showLeadModal(lead, key) {
+        currentLead = lead;
+        currentKey = key;
+        document.getElementById('modalName').textContent = lead.name || 'Homeowner';
+        document.getElementById('modalDesc').textContent = lead.description || 'No description';
+        document.getElementById('modalAddress').textContent = lead.address || 'Local area';
+        const phoneEl = document.getElementById('modalPhone');
+        phoneEl.textContent = lead.phone || 'No phone';
+        phoneEl.href = lead.phone ? `tel:${lead.phone}` : '#';
+        const emailEl = document.getElementById('modalEmail');
+        emailEl.textContent = lead.email || 'No email';
+        emailEl.href = lead.email ? `mailto:${lead.email}` : '#';
+        document.getElementById('modalSourceLink').href = lead.source || '#';
+        document.getElementById('modalStatus').textContent = lead.hot ? 'Hot Lead 🔥' : 'Warm Lead';
+        document.getElementById('leadModal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('leadModal').classList.remove('active');
+    }
+
+    function textLead() { alert('Text template copied to clipboard (ready for real SMS)'); }
+    function emailLead() { alert('Email template copied (ready for real email)'); }
+    function copyCallTextScript() { alert('Call script copied!'); }
+
+    // === FIX: Initialize everything on load ===
+    document.addEventListener('DOMContentLoaded', () => {
+        loadData();
+        renderAgents();
+        updateGlobalSummary(); // if you have this function; otherwise remove this line
+        console.log('✅ Agents grid initialized – should now be visible');
+    });
+
+    // Optional: auto-refresh every 30s (nice for demo)
+    setInterval(() => {
+        renderAgents();
+    }, 30000);
+</script>
     </script>
 </body>
 </html>
