@@ -32,7 +32,7 @@ app.get('/trigger-all', async (req, res) => {
   // ... (your exact scanning logic stays 100% the same)
   // After successful scan:
   saveData();
-  io.emit('leadsUpdated', leadsData);   // ← REAL-TIME BROADCAST
+  io.emit('leadsUpdated', leadsData);
   res.json({ success: true, message: 'Scan completed' });
 });
 
