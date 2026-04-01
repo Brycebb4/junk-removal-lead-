@@ -130,15 +130,30 @@
 
         function loadData() {
             const saved = localStorage.getItem('junkLeadsData');
-            if (saved) Object.assign(agents, JSON.parse(saved));
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Only restore scans and leadsList — always use the latest agent names/icons from code
+                Object.keys(agents).forEach(k => {
+                    if (parsed[k]) {
+                        agents[k].scans = parsed[k].scans || 0;
+                        agents[k].leadsList = parsed[k].leadsList || [];
+                    }
+                });
+            }
         }
         function saveData() {
             localStorage.setItem('junkLeadsData', JSON.stringify(agents));
         }
 
         async function clearAllLeads() {
-            if (confirm('Clear EVERYTHING (including backend)?')) {
+            if (confirm('Clear EVERYTHING (leads + scan counts)?')) {
                 await fetch('/api/leads', { method: 'DELETE' });
+                // Reset all scan counts and leads locally
+                Object.keys(agents).forEach(k => {
+                    agents[k].scans = 0;
+                    agents[k].leadsList = [];
+                });
+                localStorage.removeItem('junkLeadsData');
                 location.reload();
             }
         }
