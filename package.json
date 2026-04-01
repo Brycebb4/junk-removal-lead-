@@ -1,6 +1,6 @@
 {
   "name": "junk-removal-lead-generator",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Lead generation system for junk removal business",
   "main": "server.js",
   "scripts": {
@@ -11,7 +11,8 @@
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "node-fetch": "^2.7.0",
-    "socket.io": "^4.8.0"
+    "socket.io": "^4.8.0",
+    "node-cron": "^3.0.3"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
