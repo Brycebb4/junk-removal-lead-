@@ -256,6 +256,17 @@ const BUSINESS_SIGNALS = [
   'residential and commercial', 'commercial and residential',
   'apartments/condos', 'condos/townhomes',
   'hot tub removal', 'hot tubs', 'shed removals',
+  'home services', 'home service', 'cleaning service', 'cleanup crew',
+  'property services', 'property service',
+
+  // Business advertising TO realtors/landlords (they ARE the business)
+  'realtors & property', 'property owners —', 'need a reliable cleanup',
+  'reliable cleanup crew', 'we help you get it', 'market-ready',
+  'perfect for:', 'perfect for realtors', 'perfect for landlords',
+  'message me for a quote', 'message us for a quote',
+  'fast turnaround', 'dependable, and easy', 'easy to work with',
+  'punch list', 'home repairs', 'exterior cleanup',
+  'on q home', 'home services llc',
 
   // Phone number in title/ad = business promoting themselves
   'call shamrock', 'call junk', 'call 1-800', 'call 800',
@@ -304,6 +315,30 @@ const BUSINESS_SIGNALS = [
   'free estimate', 'before & after', 'before &amp; after',
   'serving greater', 'serving the',
   'trailer for rent', 'trailer rental', 'utility trailer',
+];
+
+// ─── IRRELEVANT TOPIC filters — these have NOTHING to do with junk removal ──
+const IRRELEVANT_SIGNALS = [
+  // Legal / attorney posts
+  'attorney', 'lawyer', 'lawsuit', 'lawsuit', 'legal advice', 'legal help',
+  'wrongful eviction', 'tenant defense', 'tenant rights', 'compensatory damages',
+  'self-help eviction', 'court case', 'court date', 'sue', 'suing',
+  'harassment, intimidation', 'police-documented', 'restraining order',
+
+  // Animal control / pets (not junk)
+  'animal control', 'deceased animals', 'dead animal', 'bury him', 'bury her',
+  'bury it', 'stray cat', 'stray dog', 'lost pet', 'found pet',
+
+  // Political / news / off-topic
+  'vote for', 'election', 'ballot', 'political', 'protest', 'rally',
+  'breaking news', 'shooting', 'accident report', 'crime report',
+
+  // Medical / health
+  'disabled', 'bad back and knees', 'surgery', 'hospital', 'medical',
+
+  // Job seeking (person looking for work, not a customer)
+  'looking for work', 'looking for a job', 'hiring', 'now hiring',
+  'job opening', 'help wanted', 'resume',
 ];
 
 // ─── REGEX patterns for business detection (catches phone-in-title ads) ─────
@@ -356,6 +391,9 @@ function extractLead(result) {
 
   // 2b. Block if any regex business pattern matches (phone-in-title ads, .com domains)
   if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(text))) return null;
+
+  // 2c. Block irrelevant topics (legal, animal control, politics, etc.)
+  if (IRRELEVANT_SIGNALS.some(sig => text.includes(sig))) return null;
 
   // 3. Must contain at least one customer-need signal
   if (!CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
@@ -416,6 +454,9 @@ function extractWatchdogLead(result) {
 
   // 2b. Block regex business patterns
   if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(text))) return null;
+
+  // 2c. Block irrelevant topics
+  if (IRRELEVANT_SIGNALS.some(sig => text.includes(sig))) return null;
 
   // 3. Must contain at least one watchdog customer signal
   if (!WATCHDOG_CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
@@ -647,6 +688,38 @@ app.post('/api/add-lead', (req, res) => {
 app.delete('/api/leads', (req, res) => {
   leadsData = { leads: [], watchdog: [], manual: [] };
   seenLeadKeys.clear();
+  saveData();
+  io.emit('leadsUpdated', leadsData);
+  res.json({ success: true });
+});
+
+// Mark a lead as "taken" (grabbed by competitor)
+app.post('/api/leads/:key/taken', (req, res) => {
+  const key = decodeURIComponent(req.params.key);
+  for (const agentKey of Object.keys(leadsData)) {
+    for (const lead of leadsData[agentKey]) {
+      if (lead._key === key) {
+        lead.taken = true;
+        lead.takenAt = new Date().toISOString();
+      }
+    }
+  }
+  saveData();
+  io.emit('leadsUpdated', leadsData);
+  res.json({ success: true });
+});
+
+// Unmark a lead as taken
+app.post('/api/leads/:key/untaken', (req, res) => {
+  const key = decodeURIComponent(req.params.key);
+  for (const agentKey of Object.keys(leadsData)) {
+    for (const lead of leadsData[agentKey]) {
+      if (lead._key === key) {
+        lead.taken = false;
+        lead.takenAt = null;
+      }
+    }
+  }
   saveData();
   io.emit('leadsUpdated', leadsData);
   res.json({ success: true });

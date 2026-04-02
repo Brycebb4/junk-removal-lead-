@@ -38,6 +38,9 @@
         .lead-item:hover { background: #e3f2fd; }
         .lead-item.hot-lead { border-left-color: #e74c3c; background: #fff5f5; }
         .lead-item.cold-lead { border-left-color: #6c757d; background: #f8f9fa; }
+        .lead-item.taken-lead { border-left-color: #ffc107; background: #fff8e1; opacity: 0.65; }
+        .lead-taken-badge { display: inline-block; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; background: #fff3cd; color: #856404; margin-left: 6px; font-weight: 600; }
+        .lead-age { font-size: 0.75em; color: #999; margin-left: 8px; }
         .lead-contact { font-size: 0.85em; color: #28a745; margin-top: 4px; }
         .lead-platform { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #1976d2; margin-left: 8px; }
         .lead-platform.linkedin { background: #dce6f1; color: #0077b5; }
@@ -82,6 +85,7 @@
                 <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div>Total Leads</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#e74c3c,#c0392b);"><div class="summary-value" id="hotLeads">0</div><div>🔥 Hot Leads</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#95a5a6,#7f8c8d);"><div class="summary-value" id="coldLeads">0</div><div>❄️ Cold Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#f39c12,#e67e22);"><div class="summary-value" id="takenLeads">0</div><div>Taken</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="scanCount">0</div><div>Scans Run</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="platforms">0</div><div>Platforms</div></div>
             </div>
@@ -108,9 +112,10 @@
             <button class="btn-scan" onclick="runLeadScan()">Scan Now</button>
             <div class="scan-status" id="scannerStatus">Last scanned: Never</div>
             <div class="filter-tabs" id="scannerFilter">
-                <div class="filter-tab active" onclick="setFilter('scanner','all')">All</div>
-                <div class="filter-tab" onclick="setFilter('scanner','hot')">🔥 Hot</div>
-                <div class="filter-tab" onclick="setFilter('scanner','cold')">❄️ Cold</div>
+                <div class="filter-tab active" data-filter="all" onclick="setFilter('scanner','all')">All</div>
+                <div class="filter-tab" data-filter="hot" onclick="setFilter('scanner','hot')">🔥 Hot</div>
+                <div class="filter-tab" data-filter="cold" onclick="setFilter('scanner','cold')">❄️ Cold</div>
+                <div class="filter-tab" data-filter="taken" onclick="setFilter('scanner','taken')">⚠️ Taken</div>
             </div>
             <div class="leads-list" id="scannerLeadsList"></div>
         </div>
@@ -136,9 +141,10 @@
             <button class="btn-scan" style="background:linear-gradient(135deg,#6f42c1,#e83e8c);" onclick="runWatchdogScan()">Scan Network</button>
             <div class="scan-status" id="watchdogStatus">Last scanned: Never</div>
             <div class="filter-tabs" id="watchdogFilter">
-                <div class="filter-tab active" onclick="setFilter('watchdog','all')">All</div>
-                <div class="filter-tab" onclick="setFilter('watchdog','hot')">🔥 Hot</div>
-                <div class="filter-tab" onclick="setFilter('watchdog','cold')">❄️ Cold</div>
+                <div class="filter-tab active" data-filter="all" onclick="setFilter('watchdog','all')">All</div>
+                <div class="filter-tab" data-filter="hot" onclick="setFilter('watchdog','hot')">🔥 Hot</div>
+                <div class="filter-tab" data-filter="cold" onclick="setFilter('watchdog','cold')">❄️ Cold</div>
+                <div class="filter-tab" data-filter="taken" onclick="setFilter('watchdog','taken')">⚠️ Taken</div>
             </div>
             <div class="leads-list" id="watchdogLeadsList"></div>
         </div>
@@ -190,6 +196,7 @@
                     <button onclick="previewResponse('moving')" style="background:#6c757d;">👁 Preview Moving Response</button>
                     <button onclick="previewResponse('realtor')" style="background:#6c757d;">👁 Preview Realtor Response</button>
                     <button onclick="copyScript()" style="background:#f39c12;">📋 Copy Call Script</button>
+                    <button id="takenBtn" style="background:#ffc107;color:#333;">⚠️ Mark as Already Taken</button>
                     <button id="contactBtn" style="background:#28a745;">✅ Mark as Contacted + Remove</button>
                     <button onclick="closeModal()" style="background:#dc3545;">Close</button>
                 </div>
@@ -273,38 +280,68 @@
             }
         }
 
+        // Human-readable time ago
+        function timeAgo(ts) {
+            const ms = Date.now() - new Date(ts).getTime();
+            const mins = Math.floor(ms / 60000);
+            if (mins < 1) return 'just now';
+            if (mins < 60) return mins + 'm ago';
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return hrs + 'h ago';
+            const days = Math.floor(hrs / 24);
+            return days + 'd ago';
+        }
+
         function setFilter(agent, mode) {
             if (agent === 'scanner') scannerFilterMode = mode;
             else watchdogFilterMode = mode;
-            // Update tab active states
             const tabs = document.getElementById(agent === 'scanner' ? 'scannerFilter' : 'watchdogFilter').children;
             for (const tab of tabs) tab.classList.remove('active');
-            for (const tab of tabs) { if (tab.textContent.toLowerCase().includes(mode === 'all' ? 'all' : mode)) tab.classList.add('active'); }
+            for (const tab of tabs) { if (tab.dataset.filter === mode) tab.classList.add('active'); }
             render();
         }
 
         function renderLeadList(leads, listId, filterMode) {
             const list = document.getElementById(listId);
             list.innerHTML = '';
-            // Apply temperature filter
-            let filtered = leads;
-            if (filterMode !== 'all') {
-                filtered = leads.filter(l => getTemp(l) === filterMode);
+
+            // Sort by timestamp — newest first
+            const sorted = [...leads].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+            // Apply filter
+            let filtered = sorted;
+            if (filterMode === 'hot') {
+                filtered = sorted.filter(l => getTemp(l) === 'hot' && !l.taken);
+            } else if (filterMode === 'cold') {
+                filtered = sorted.filter(l => getTemp(l) === 'cold' && !l.taken);
+            } else if (filterMode === 'taken') {
+                filtered = sorted.filter(l => l.taken);
+            } else {
+                // "all" shows non-taken first, then taken at bottom
+                filtered = [
+                    ...sorted.filter(l => !l.taken),
+                    ...sorted.filter(l => l.taken),
+                ];
             }
+
             if (filtered.length === 0) {
                 list.innerHTML = `<p class="no-leads">${leads.length === 0 ? 'No leads yet. Click Scan!' : 'No ' + filterMode + ' leads'}</p>`;
                 return;
             }
             filtered.forEach(lead => {
                 const temp = getTemp(lead);
+                const isTaken = lead.taken;
                 const div = document.createElement('div');
-                div.className = `lead-item ${temp}-lead`;
+                div.className = `lead-item ${isTaken ? 'taken-lead' : temp + '-lead'}`;
                 const platClass = (lead.platform || '').toLowerCase();
+                const age = lead.timestamp ? timeAgo(lead.timestamp) : '';
                 div.innerHTML = `
-                    ${temp === 'hot' ? '🔥' : '❄️'} <strong>${lead.name || 'Potential Customer'}</strong>
+                    ${isTaken ? '⚠️' : (temp === 'hot' ? '🔥' : '❄️')} <strong>${lead.name || 'Potential Customer'}</strong>
                     <span class="lead-platform ${platClass}">${lead.platform || 'Web'}</span>
                     <span class="lead-temp ${temp}">${temp === 'hot' ? 'HOT' : 'COLD'}</span>
+                    ${isTaken ? '<span class="lead-taken-badge">TAKEN</span>' : ''}
                     ${lead.professionalType ? '<span class="lead-type">' + lead.professionalType + '</span>' : ''}
+                    <span class="lead-age">${age}</span>
                     <br/><span style="color:#555;">${(lead.description || lead.title || 'Junk removal needed').substring(0, 100)}...</span>
                     <div class="lead-contact">
                         ${lead.phone ? '📞 ' + lead.phone : ''} ${lead.phone && lead.email ? '|' : ''} ${lead.email ? '✉️ ' + lead.email : ''}
@@ -317,14 +354,16 @@
 
         function render() {
             const all = [...allLeads, ...watchdogLeads, ...manualLeads];
-            const hotAll = all.filter(l => getTemp(l) === 'hot');
-            const coldAll = all.filter(l => getTemp(l) === 'cold');
+            const hotAll = all.filter(l => getTemp(l) === 'hot' && !l.taken);
+            const coldAll = all.filter(l => getTemp(l) === 'cold' && !l.taken);
+            const takenAll = all.filter(l => l.taken);
             const platforms = new Set(all.map(l => l.platform)).size;
 
             // Summary
             document.getElementById('totalLeads').textContent = all.length;
             document.getElementById('hotLeads').textContent = hotAll.length;
             document.getElementById('coldLeads').textContent = coldAll.length;
+            document.getElementById('takenLeads').textContent = takenAll.length;
             document.getElementById('scanCount').textContent = scannerScans + watchdogScans;
             document.getElementById('platforms').textContent = platforms;
 
@@ -360,8 +399,35 @@
             document.getElementById('modalSource').href = lead.source || '#';
             const st = document.getElementById('modalStatus');
             const temp = getTemp(lead);
-            st.textContent = temp === 'hot' ? '🔥 Hot Lead (< 6 hours)' : '❄️ Cold Lead (6+ hours)';
-            st.style.color = temp === 'hot' ? '#e74c3c' : '#6c757d';
+            if (lead.taken) {
+                st.textContent = '⚠️ Already Taken';
+                st.style.color = '#856404';
+            } else {
+                st.textContent = temp === 'hot' ? '🔥 Hot Lead (< 6 hours)' : '❄️ Cold Lead (6+ hours)';
+                st.style.color = temp === 'hot' ? '#e74c3c' : '#6c757d';
+            }
+            // Toggle taken status
+            const takenBtn = document.getElementById('takenBtn');
+            if (lead.taken) {
+                takenBtn.textContent = '↩️ Unmark as Taken';
+                takenBtn.style.background = '#17a2b8';
+                takenBtn.style.color = 'white';
+            } else {
+                takenBtn.textContent = '⚠️ Mark as Already Taken';
+                takenBtn.style.background = '#ffc107';
+                takenBtn.style.color = '#333';
+            }
+            takenBtn.onclick = async () => {
+                const endpoint = lead.taken ? 'untaken' : 'taken';
+                await fetch(`/api/leads/${encodeURIComponent(lead._key)}/${endpoint}`, { method: 'POST' });
+                lead.taken = !lead.taken;
+                // Update in local arrays
+                const updateArr = (arr) => arr.forEach(l => { if (l._key === lead._key) l.taken = lead.taken; });
+                updateArr(allLeads); updateArr(watchdogLeads); updateArr(manualLeads);
+                render();
+                closeModal();
+            };
+
             document.getElementById('contactBtn').onclick = () => {
                 if (confirm('Mark as contacted and remove?')) {
                     fetch(`/api/leads/${encodeURIComponent(lead._key)}`, { method: 'DELETE' });
