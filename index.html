@@ -36,10 +36,22 @@
         .leads-list { margin-top: 15px; max-height: 600px; overflow-y: auto; }
         .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #28a745; border-radius: 8px; cursor: pointer; }
         .lead-item:hover { background: #e3f2fd; }
-        .lead-item.hot { border-left-color: #e74c3c; }
+        .lead-item.hot-lead { border-left-color: #e74c3c; background: #fff5f5; }
+        .lead-item.cold-lead { border-left-color: #6c757d; background: #f8f9fa; }
         .lead-contact { font-size: 0.85em; color: #28a745; margin-top: 4px; }
         .lead-platform { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #1976d2; margin-left: 8px; }
+        .lead-temp { display: inline-block; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 600; }
+        .lead-temp.hot { background: #f8d7da; color: #721c24; }
+        .lead-temp.cold { background: #e2e3e5; color: #383d41; }
+        .lead-type { display: inline-block; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; background: #d4edda; color: #155724; margin-left: 6px; }
         .no-leads { color: #999; font-style: italic; padding: 20px; text-align: center; }
+
+        .filter-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+        .filter-tab { padding: 8px 16px; border: 2px solid #ddd; border-radius: 20px; cursor: pointer; font-size: 0.85em; font-weight: 600; background: white; }
+        .filter-tab.active { border-color: #28a745; background: #d4edda; color: #155724; }
+        .filter-tab:hover { border-color: #28a745; }
+
+        .agent-card.watchdog .agent-icon { background: linear-gradient(135deg, #6f42c1, #e83e8c); }
 
         .manual-form { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; }
         .manual-form h3 { margin-bottom: 15px; color: #2c3e50; }
@@ -67,13 +79,14 @@
         <div class="summary">
             <div class="summary-grid">
                 <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div>Total Leads</div></div>
-                <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div>Hot Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#e74c3c,#c0392b);"><div class="summary-value" id="hotLeads">0</div><div>🔥 Hot Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#95a5a6,#7f8c8d);"><div class="summary-value" id="coldLeads">0</div><div>❄️ Cold Leads</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="scanCount">0</div><div>Scans Run</div></div>
                 <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="platforms">0</div><div>Platforms</div></div>
             </div>
         </div>
 
-        <!-- SINGLE AGENT CARD -->
+        <!-- LEAD SCANNER AGENT -->
         <div class="agent-card">
             <div class="agent-header">
                 <div class="agent-title">
@@ -81,17 +94,52 @@
                     <div>
                         <h2>Lead Scanner</h2>
                         <span style="background:#d4edda;color:#155724;padding:4px 12px;border-radius:20px;font-size:0.8em;">Active</span>
+                        <p style="font-size:0.8em;color:#666;margin-top:4px;">Scans community platforms for customers needing junk removal, hauling, moving help</p>
                     </div>
                 </div>
             </div>
             <div class="metrics">
-                <div class="metric"><div class="metric-value" id="agentScans">0</div><div>Scans</div></div>
-                <div class="metric"><div class="metric-value" id="agentLeads">0</div><div>Leads</div></div>
-                <div class="metric"><div class="metric-value" id="agentHot">0</div><div>Hot</div></div>
+                <div class="metric"><div class="metric-value" id="scannerScans">0</div><div>Scans</div></div>
+                <div class="metric"><div class="metric-value" id="scannerLeads">0</div><div>Leads</div></div>
+                <div class="metric"><div class="metric-value" id="scannerHot">0</div><div>🔥 Hot</div></div>
+                <div class="metric"><div class="metric-value" id="scannerCold">0</div><div>❄️ Cold</div></div>
             </div>
-            <button class="btn-scan" onclick="runScan()">Scan Now</button>
-            <div class="scan-status" id="scanStatus">Last scanned: Never</div>
-            <div class="leads-list" id="leadsList"></div>
+            <button class="btn-scan" onclick="runLeadScan()">Scan Now</button>
+            <div class="scan-status" id="scannerStatus">Last scanned: Never</div>
+            <div class="filter-tabs" id="scannerFilter">
+                <div class="filter-tab active" onclick="setFilter('scanner','all')">All</div>
+                <div class="filter-tab" onclick="setFilter('scanner','hot')">🔥 Hot</div>
+                <div class="filter-tab" onclick="setFilter('scanner','cold')">❄️ Cold</div>
+            </div>
+            <div class="leads-list" id="scannerLeadsList"></div>
+        </div>
+
+        <!-- NETWORK WATCHDOG AGENT -->
+        <div class="agent-card watchdog">
+            <div class="agent-header">
+                <div class="agent-title">
+                    <div class="agent-icon">🕵️</div>
+                    <div>
+                        <h2>Network Watchdog</h2>
+                        <span style="background:#f3e5f5;color:#6f42c1;padding:4px 12px;border-radius:20px;font-size:0.8em;">Active</span>
+                        <p style="font-size:0.8em;color:#666;margin-top:4px;">Tracks realtors, property managers, landlords, estate pros & flippers posting about cleanout needs</p>
+                    </div>
+                </div>
+            </div>
+            <div class="metrics">
+                <div class="metric"><div class="metric-value" id="watchdogScans">0</div><div>Scans</div></div>
+                <div class="metric"><div class="metric-value" id="watchdogLeads">0</div><div>Leads</div></div>
+                <div class="metric"><div class="metric-value" id="watchdogHot">0</div><div>🔥 Hot</div></div>
+                <div class="metric"><div class="metric-value" id="watchdogCold">0</div><div>❄️ Cold</div></div>
+            </div>
+            <button class="btn-scan" style="background:linear-gradient(135deg,#6f42c1,#e83e8c);" onclick="runWatchdogScan()">Scan Network</button>
+            <div class="scan-status" id="watchdogStatus">Last scanned: Never</div>
+            <div class="filter-tabs" id="watchdogFilter">
+                <div class="filter-tab active" onclick="setFilter('watchdog','all')">All</div>
+                <div class="filter-tab" onclick="setFilter('watchdog','hot')">🔥 Hot</div>
+                <div class="filter-tab" onclick="setFilter('watchdog','cold')">❄️ Cold</div>
+            </div>
+            <div class="leads-list" id="watchdogLeadsList"></div>
         </div>
 
         <!-- MANUAL ENTRY -->
@@ -151,14 +199,19 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let scans = 0;
+        let scannerScans = 0;
+        let watchdogScans = 0;
         let allLeads = [];
+        let watchdogLeads = [];
         let manualLeads = [];
         let currentLead = null;
+        let scannerFilterMode = 'all';
+        let watchdogFilterMode = 'all';
 
         const COMPANY = "Junk Removal Boys";
         const PHONE = "(513) 555-1234";
         const GMAIL = "junkboysremoval394@gmail.com";
+        const SIX_HOURS = 6 * 60 * 60 * 1000;
 
         // ─── RESPONSE TEMPLATES (tailored per lead type) ─────────────
         function getTemplates(lead) {
@@ -191,52 +244,66 @@
             };
         }
 
+        // Classify lead temperature by age
+        function getTemp(lead) {
+            const age = Date.now() - new Date(lead.timestamp).getTime();
+            return age <= SIX_HOURS ? 'hot' : 'cold';
+        }
+
         function loadLocal() {
             const saved = localStorage.getItem('junkScanner');
             if (saved) {
                 const d = JSON.parse(saved);
-                scans = d.scans || 0;
+                scannerScans = d.scannerScans || 0;
+                watchdogScans = d.watchdogScans || 0;
             }
         }
         function saveLocal() {
-            localStorage.setItem('junkScanner', JSON.stringify({ scans }));
+            localStorage.setItem('junkScanner', JSON.stringify({ scannerScans, watchdogScans }));
         }
 
         async function clearAllLeads() {
-            if (confirm('Clear ALL leads and reset scan count?')) {
+            if (confirm('Clear ALL leads and reset scan counts?')) {
                 await fetch('/api/leads', { method: 'DELETE' });
-                scans = 0;
+                scannerScans = 0;
+                watchdogScans = 0;
                 localStorage.removeItem('junkScanner');
                 location.reload();
             }
         }
 
-        function render() {
-            const combined = [...allLeads, ...manualLeads];
-            const hot = combined.filter(l => l.hot);
-            const platforms = new Set(combined.map(l => l.platform)).size;
+        function setFilter(agent, mode) {
+            if (agent === 'scanner') scannerFilterMode = mode;
+            else watchdogFilterMode = mode;
+            // Update tab active states
+            const tabs = document.getElementById(agent === 'scanner' ? 'scannerFilter' : 'watchdogFilter').children;
+            for (const tab of tabs) tab.classList.remove('active');
+            for (const tab of tabs) { if (tab.textContent.toLowerCase().includes(mode === 'all' ? 'all' : mode)) tab.classList.add('active'); }
+            render();
+        }
 
-            document.getElementById('totalLeads').textContent = combined.length;
-            document.getElementById('hotLeads').textContent = hot.length;
-            document.getElementById('scanCount').textContent = scans;
-            document.getElementById('platforms').textContent = platforms;
-            document.getElementById('agentScans').textContent = scans;
-            document.getElementById('agentLeads').textContent = combined.length;
-            document.getElementById('agentHot').textContent = hot.length;
-
-            const list = document.getElementById('leadsList');
+        function renderLeadList(leads, listId, filterMode) {
+            const list = document.getElementById(listId);
             list.innerHTML = '';
-            if (combined.length === 0) {
-                list.innerHTML = '<p class="no-leads">No leads yet. Click Scan Now!</p>';
+            // Apply temperature filter
+            let filtered = leads;
+            if (filterMode !== 'all') {
+                filtered = leads.filter(l => getTemp(l) === filterMode);
+            }
+            if (filtered.length === 0) {
+                list.innerHTML = `<p class="no-leads">${leads.length === 0 ? 'No leads yet. Click Scan!' : 'No ' + filterMode + ' leads'}</p>`;
                 return;
             }
-            combined.forEach(lead => {
+            filtered.forEach(lead => {
+                const temp = getTemp(lead);
                 const div = document.createElement('div');
-                div.className = `lead-item${lead.hot ? ' hot' : ''}`;
+                div.className = `lead-item ${temp}-lead`;
                 div.innerHTML = `
-                    ${lead.hot ? '🔥' : '📋'} <strong>${lead.name || 'Potential Customer'}</strong>
+                    ${temp === 'hot' ? '🔥' : '❄️'} <strong>${lead.name || 'Potential Customer'}</strong>
                     <span class="lead-platform">${lead.platform || 'Web'}</span>
-                    <br/><span style="color:#555;">${(lead.description || lead.title || 'Junk removal needed').substring(0, 80)}...</span>
+                    <span class="lead-temp ${temp}">${temp === 'hot' ? 'HOT' : 'COLD'}</span>
+                    ${lead.professionalType ? '<span class="lead-type">' + lead.professionalType + '</span>' : ''}
+                    <br/><span style="color:#555;">${(lead.description || lead.title || 'Junk removal needed').substring(0, 100)}...</span>
                     <div class="lead-contact">
                         ${lead.phone ? '📞 ' + lead.phone : ''} ${lead.phone && lead.email ? '|' : ''} ${lead.email ? '✉️ ' + lead.email : ''}
                         ${!lead.phone && !lead.email ? '📍 ' + (lead.address || '') : ''}
@@ -244,6 +311,37 @@
                 div.onclick = () => showModal(lead);
                 list.appendChild(div);
             });
+        }
+
+        function render() {
+            const all = [...allLeads, ...watchdogLeads, ...manualLeads];
+            const hotAll = all.filter(l => getTemp(l) === 'hot');
+            const coldAll = all.filter(l => getTemp(l) === 'cold');
+            const platforms = new Set(all.map(l => l.platform)).size;
+
+            // Summary
+            document.getElementById('totalLeads').textContent = all.length;
+            document.getElementById('hotLeads').textContent = hotAll.length;
+            document.getElementById('coldLeads').textContent = coldAll.length;
+            document.getElementById('scanCount').textContent = scannerScans + watchdogScans;
+            document.getElementById('platforms').textContent = platforms;
+
+            // Scanner metrics
+            const scannerAll = [...allLeads, ...manualLeads];
+            document.getElementById('scannerScans').textContent = scannerScans;
+            document.getElementById('scannerLeads').textContent = scannerAll.length;
+            document.getElementById('scannerHot').textContent = scannerAll.filter(l => getTemp(l) === 'hot').length;
+            document.getElementById('scannerCold').textContent = scannerAll.filter(l => getTemp(l) === 'cold').length;
+
+            // Watchdog metrics
+            document.getElementById('watchdogScans').textContent = watchdogScans;
+            document.getElementById('watchdogLeads').textContent = watchdogLeads.length;
+            document.getElementById('watchdogHot').textContent = watchdogLeads.filter(l => getTemp(l) === 'hot').length;
+            document.getElementById('watchdogCold').textContent = watchdogLeads.filter(l => getTemp(l) === 'cold').length;
+
+            // Render lead lists
+            renderLeadList([...allLeads, ...manualLeads], 'scannerLeadsList', scannerFilterMode);
+            renderLeadList(watchdogLeads, 'watchdogLeadsList', watchdogFilterMode);
         }
 
         function showModal(lead) {
@@ -259,12 +357,14 @@
             em.href = lead.email ? `mailto:${lead.email}` : '#';
             document.getElementById('modalSource').href = lead.source || '#';
             const st = document.getElementById('modalStatus');
-            st.textContent = lead.hot ? '🔥 Hot Lead' : 'Warm Lead';
-            st.style.color = lead.hot ? '#28a745' : '#f39c12';
+            const temp = getTemp(lead);
+            st.textContent = temp === 'hot' ? '🔥 Hot Lead (< 6 hours)' : '❄️ Cold Lead (6+ hours)';
+            st.style.color = temp === 'hot' ? '#e74c3c' : '#6c757d';
             document.getElementById('contactBtn').onclick = () => {
                 if (confirm('Mark as contacted and remove?')) {
                     fetch(`/api/leads/${encodeURIComponent(lead._key)}`, { method: 'DELETE' });
                     allLeads = allLeads.filter(l => l._key !== lead._key);
+                    watchdogLeads = watchdogLeads.filter(l => l._key !== lead._key);
                     manualLeads = manualLeads.filter(l => l._key !== lead._key);
                     render();
                     closeModal();
@@ -308,9 +408,9 @@
             navigator.clipboard.writeText(t.text).then(() => alert("Script copied to clipboard!"));
         }
 
-        async function runScan() {
-            const status = document.getElementById('scanStatus');
-            status.textContent = "Scanning Google, Facebook, Reddit, Craigslist...";
+        async function runLeadScan() {
+            const status = document.getElementById('scannerStatus');
+            status.textContent = "Scanning Facebook, Reddit, Craigslist, Nextdoor...";
             status.style.color = "#f39c12";
             try {
                 const scanRes = await fetch('/trigger-all');
@@ -318,12 +418,37 @@
                 const res = await fetch('/api/leads');
                 const data = await res.json();
                 allLeads = data.leads || [];
+                watchdogLeads = data.watchdog || [];
                 manualLeads = data.manual || [];
-                scans++;
+                scannerScans++;
                 saveLocal();
                 render();
                 status.textContent = `Last scanned: ${new Date().toLocaleTimeString()} — ${scanData.totalNew || 0} new leads found`;
                 status.style.color = "#28a745";
+            } catch (e) {
+                status.textContent = "Scan failed - check logs";
+                status.style.color = "#e74c3c";
+                console.error(e);
+            }
+        }
+
+        async function runWatchdogScan() {
+            const status = document.getElementById('watchdogStatus');
+            status.textContent = "Scanning for realtors, landlords, estate pros...";
+            status.style.color = "#f39c12";
+            try {
+                const scanRes = await fetch('/trigger-watchdog');
+                const scanData = await scanRes.json();
+                const res = await fetch('/api/leads');
+                const data = await res.json();
+                allLeads = data.leads || [];
+                watchdogLeads = data.watchdog || [];
+                manualLeads = data.manual || [];
+                watchdogScans++;
+                saveLocal();
+                render();
+                status.textContent = `Last scanned: ${new Date().toLocaleTimeString()} — ${scanData.totalNew || 0} network leads found`;
+                status.style.color = "#6f42c1";
             } catch (e) {
                 status.textContent = "Scan failed - check logs";
                 status.style.color = "#e74c3c";
@@ -342,6 +467,7 @@
             const res = await fetch('/api/leads');
             const backendData = await res.json();
             allLeads = backendData.leads || [];
+            watchdogLeads = backendData.watchdog || [];
             manualLeads = backendData.manual || [];
             render();
         });
@@ -349,6 +475,7 @@
         // Real-time updates
         socket.on('leadsUpdated', (data) => {
             allLeads = data.leads || [];
+            watchdogLeads = data.watchdog || [];
             manualLeads = data.manual || [];
             render();
         });
@@ -360,6 +487,7 @@
                 const res = await fetch('/api/leads');
                 const data = await res.json();
                 allLeads = data.leads || [];
+                watchdogLeads = data.watchdog || [];
                 manualLeads = data.manual || [];
             } catch (e) {}
             render();

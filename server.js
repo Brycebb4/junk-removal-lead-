@@ -20,15 +20,16 @@ const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const ALERT_EMAIL    = process.env.ALERT_EMAIL    || 'junkboysremoval394@gmail.com';
 const DATA_FILE      = './leads.json';
 
-// ─── Persistent store (single agent: "leads" + manual entry) ─────────────────
+// ─── Persistent store (two agents: "leads" + "watchdog" + manual entry) ──────
 let leadsData = fs.existsSync(DATA_FILE)
   ? JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'))
-  : { leads: [], manual: [] };
+  : { leads: [], watchdog: [], manual: [] };
 
-// Migrate old multi-agent format if needed
+// Migrate old formats
 if (leadsData.realEstate || leadsData.socialMedia) {
-  leadsData = { leads: [], manual: leadsData.manual || [] };
+  leadsData = { leads: [], watchdog: [], manual: leadsData.manual || [] };
 }
+if (!leadsData.watchdog) leadsData.watchdog = [];
 
 let seenLeadKeys = new Set(
   Object.values(leadsData).flat().map(l => l._key).filter(Boolean)
@@ -97,6 +98,73 @@ const SEARCH_QUERIES = [
   'site:nextdoor.com "junk removal" Cincinnati OR Dayton recommend OR "need" OR "looking for"',
   'site:nextdoor.com "haul away" OR "hauling" Cincinnati OR Dayton',
   'site:nextdoor.com "clean out" OR "cleanout" Cincinnati OR Dayton "need" OR "help"',
+];
+
+// ─── NETWORK WATCHDOG — track realtors, property managers, estate pros, etc. ─
+// These people are REFERRAL GOLDMINES — they regularly need junk removal.
+const WATCHDOG_KEYWORDS = [
+  'junk removal', 'junk haul', 'cleanout', 'estate cleanout', 'house cleanup',
+  'debris removal', 'haul away', 'trash out', 'pre-listing clean', 'eviction cleanup',
+  'tenant left', 'property cleanout', 'foreclosure cleanup', 'hoarder cleanout',
+  'estate sale leftovers', 'move out cleanout', 'garage cleanout', 'basement cleanout',
+  'appliance removal', 'furniture removal', 'construction debris',
+];
+
+const WATCHDOG_PROFILES = [
+  // Types of professionals to track (search patterns, not specific usernames)
+  'realtor', 'real estate agent', 'property manager', 'landlord',
+  'estate sale', 'probate attorney', 'probate lawyer',
+  'general contractor', 'home flipper', 'house flipper',
+  'property management', 'rental property', 'apartment manager',
+  'home inspector', 'closing agent', 'title company',
+];
+
+const WATCHDOG_QUERIES = [
+  // === REALTORS needing cleanout before listing ===
+  'site:facebook.com/groups realtor OR "real estate agent" "cleanout" OR "junk removal" OR "haul away" Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "pre-listing" OR "getting listed" cleanout OR "junk removal" Cincinnati OR Dayton',
+  'site:facebook.com/groups realtor OR agent "need someone to clean out" OR "need junk removed" Cincinnati OR Dayton',
+  'site:facebook.com/groups "listing this house" OR "listing this property" junk OR cleanout OR haul Cincinnati OR Dayton',
+
+  // === PROPERTY MANAGERS / LANDLORDS with tenant turnovers ===
+  'site:facebook.com/groups landlord OR "property manager" "tenant left" OR "moved out" OR "eviction" junk OR trash OR cleanout Cincinnati OR Dayton',
+  'site:facebook.com/groups "rental property" OR "rental unit" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
+  'site:facebook.com/groups landlord "clean out" OR "trash out" OR "debris" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com/groups "tenant trashed" OR "tenant destroyed" OR "tenant abandoned" Cincinnati OR Dayton',
+
+  // === ESTATE SALES / PROBATE — leftovers after sale ===
+  'site:facebook.com/groups "estate sale" "leftovers" OR "what\'s left" OR "haul away" OR "cleanout" Cincinnati OR Dayton',
+  'site:facebook.com/groups "estate cleanout" OR "estate clean out" Cincinnati OR Dayton OR Ohio "need" OR "looking"',
+  'site:facebook.com/groups "probate" OR "inherited house" cleanout OR junk OR "haul away" Cincinnati OR Dayton',
+  'site:facebook.com/groups "deceased" OR "passed away" house OR property cleanout OR junk Cincinnati OR Dayton',
+
+  // === HOME FLIPPERS needing demo/cleanout ===
+  'site:facebook.com/groups "house flip" OR "home flip" OR "flipping" cleanout OR "junk removal" OR demolition Cincinnati OR Dayton',
+  'site:facebook.com/groups "rehab property" OR "fixer upper" cleanout OR "haul away" OR debris Cincinnati OR Dayton',
+
+  // === CRAIGSLIST — professional referral posts ===
+  'site:craigslist.org realtor OR landlord OR "property manager" cleanout OR "junk removal" Cincinnati OR Dayton',
+  'site:craigslist.org "estate sale" leftovers OR cleanout OR "haul away" Cincinnati OR Dayton',
+  'site:craigslist.org "tenant left" OR "eviction" cleanout OR junk Cincinnati OR Dayton',
+
+  // === REDDIT — professional referral posts ===
+  'site:reddit.com realtor OR landlord OR "property manager" "junk removal" OR cleanout Cincinnati OR Dayton',
+  'site:reddit.com "estate sale" OR "estate cleanout" Cincinnati OR Dayton "need" OR "recommend"',
+
+  // === NEXTDOOR — professional referral posts ===
+  'site:nextdoor.com realtor OR landlord "junk removal" OR cleanout OR "haul away" Cincinnati OR Dayton',
+  'site:nextdoor.com "estate sale" OR "estate cleanout" OR "tenant left" Cincinnati OR Dayton',
+];
+
+// ─── WATCHDOG-specific business signals (stricter — must be a NEED, not an ad) ─
+const WATCHDOG_CUSTOMER_SIGNALS = [
+  'need', 'looking for', 'anyone', 'recommend', 'help', 'want', 'hire',
+  'tenant left', 'tenant moved', 'eviction', 'foreclosure', 'estate',
+  'cleanout', 'clean out', 'haul away', 'debris', 'junk',
+  'pre-listing', 'getting listed', 'listing this', 'show ready',
+  'leftovers', 'what\'s left', 'inherited', 'probate', 'deceased',
+  'trashed', 'destroyed', 'abandoned', 'moved out', 'move out',
+  'flip', 'rehab', 'fixer upper', 'renovation',
 ];
 
 // ─── Serper.dev Google Search ────────────────────────────────────────────────
@@ -282,6 +350,74 @@ function extractLead(result) {
   };
 }
 
+// ─── Extract a WATCHDOG lead (from professional network posts) ──────────────
+function extractWatchdogLead(result) {
+  const text  = `${result.title || ''} ${result.content || ''}`.toLowerCase();
+  const url   = result.url || '';
+  const title = result.title || '';
+  const snippet = result.content || '';
+
+  // 0. Must be from allowed platform
+  if (!ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p))) return null;
+
+  // 1. Block known business/directory domains
+  if (BLOCKED_DOMAINS.some(d => url.toLowerCase().includes(d))) return null;
+
+  // 2. Block business ads (same filter)
+  if (BUSINESS_SIGNALS.some(sig => text.includes(sig))) return null;
+
+  // 3. Must contain at least one watchdog customer signal
+  if (!WATCHDOG_CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
+
+  // 4. Deduplicate
+  const key = url || title.substring(0, 60);
+  if (seenLeadKeys.has(key)) return null;
+  seenLeadKeys.add(key);
+
+  // Extract contact info
+  const phoneMatch = text.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
+  const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);
+  const phone = phoneMatch ? phoneMatch[1] : null;
+  const email = emailMatch ? emailMatch[0] : null;
+
+  // Extract location
+  const location = LOCATIONS.find(loc => text.includes(loc.toLowerCase())) || 'Cincinnati Area';
+
+  // Platform label
+  let platform = 'Google';
+  if (url.includes('facebook'))  platform = 'Facebook';
+  else if (url.includes('reddit'))    platform = 'Reddit';
+  else if (url.includes('craigslist')) platform = 'Craigslist';
+  else if (url.includes('nextdoor'))  platform = 'Nextdoor';
+
+  // Detect the professional type
+  let professionalType = 'Professional';
+  if (text.includes('realtor') || text.includes('real estate agent') || text.includes('listing'))
+    professionalType = 'Realtor/Agent';
+  else if (text.includes('landlord') || text.includes('property manager') || text.includes('tenant'))
+    professionalType = 'Landlord/PM';
+  else if (text.includes('estate sale') || text.includes('probate') || text.includes('deceased') || text.includes('inherited'))
+    professionalType = 'Estate/Probate';
+  else if (text.includes('flip') || text.includes('rehab') || text.includes('fixer'))
+    professionalType = 'House Flipper';
+
+  return {
+    _key:            key,
+    name:            professionalType,
+    description:     snippet.substring(0, 200),
+    address:         location,
+    phone:           phone || '',
+    email:           email || '',
+    source:          url,
+    platform,
+    hot:             !!(phone || email),
+    title,
+    timestamp:       new Date().toISOString(),
+    agentKey:        'watchdog',
+    professionalType,
+  };
+}
+
 // ─── Send email alert ────────────────────────────────────────────────────────
 async function sendEmailAlert(newLeads) {
   if (!RESEND_API_KEY || !newLeads.length) return;
@@ -318,18 +454,27 @@ async function sendEmailAlert(newLeads) {
   }
 }
 
-// ─── Core scan ───────────────────────────────────────────────────────────────
+// ─── Classify lead temperature based on age ────────────────────────────────
+function classifyLeadTemp(lead) {
+  const ageMs = Date.now() - new Date(lead.timestamp).getTime();
+  const sixHours = 6 * 60 * 60 * 1000;
+  return ageMs <= sixHours ? 'hot' : 'cold';
+}
+
+// ─── Core Lead Scanner scan ─────────────────────────────────────────────────
 async function runScan() {
-  console.log(`[${new Date().toLocaleTimeString()}] Starting scan (${SEARCH_QUERIES.length} queries)...`);
+  console.log(`[${new Date().toLocaleTimeString()}] Starting Lead Scanner (${SEARCH_QUERIES.length} queries)...`);
   const newLeads = [];
 
   for (const query of SEARCH_QUERIES) {
     const results = await searchSerper(query);
     for (const result of results) {
       const lead = extractLead(result);
-      if (lead) newLeads.push(lead);
+      if (lead) {
+        lead.temperature = 'hot'; // just found = hot
+        newLeads.push(lead);
+      }
     }
-    // Respect rate limits
     await new Promise(r => setTimeout(r, 300));
   }
 
@@ -338,27 +483,84 @@ async function runScan() {
     saveData();
     io.emit('leadsUpdated', leadsData);
     await sendEmailAlert(newLeads);
-    console.log(`Scan complete - ${newLeads.length} new leads found`);
+    console.log(`Lead Scanner complete - ${newLeads.length} new leads found`);
   } else {
-    console.log('Scan complete - no new leads this cycle');
+    console.log('Lead Scanner complete - no new leads this cycle');
   }
 
   return { totalNew: newLeads.length, leads: newLeads };
 }
 
-// ─── Auto-scan 2x daily (8am + 6pm) ─────────────────────────────────────────
+// ─── Network Watchdog scan ──────────────────────────────────────────────────
+async function runWatchdogScan() {
+  console.log(`[${new Date().toLocaleTimeString()}] Starting Network Watchdog (${WATCHDOG_QUERIES.length} queries)...`);
+  const newLeads = [];
+
+  for (const query of WATCHDOG_QUERIES) {
+    const results = await searchSerper(query);
+    for (const result of results) {
+      const lead = extractWatchdogLead(result);
+      if (lead) {
+        lead.temperature = 'hot'; // just found = hot
+        newLeads.push(lead);
+      }
+    }
+    await new Promise(r => setTimeout(r, 300));
+  }
+
+  if (newLeads.length) {
+    leadsData.watchdog = [...newLeads, ...leadsData.watchdog].slice(0, 200);
+    saveData();
+    io.emit('leadsUpdated', leadsData);
+    await sendEmailAlert(newLeads);
+    console.log(`Network Watchdog complete - ${newLeads.length} new leads found`);
+  } else {
+    console.log('Network Watchdog complete - no new leads this cycle');
+  }
+
+  return { totalNew: newLeads.length, leads: newLeads };
+}
+
+// ─── Reclassify old leads as cold (runs every hour) ─────────────────────────
+function reclassifyTemperatures() {
+  const sixHours = 6 * 60 * 60 * 1000;
+  for (const key of ['leads', 'watchdog']) {
+    for (const lead of leadsData[key]) {
+      const age = Date.now() - new Date(lead.timestamp).getTime();
+      lead.temperature = age <= sixHours ? 'hot' : 'cold';
+    }
+  }
+  saveData();
+  io.emit('leadsUpdated', leadsData);
+}
+
+// ─── Auto-scan 2x daily (8am + 6pm) — both scanners ────────────────────────
 cron.schedule('0 8,18 * * *', () => {
-  console.log('Cron-triggered scan');
+  console.log('Cron-triggered scan (both agents)');
   runScan().catch(console.error);
+  setTimeout(() => runWatchdogScan().catch(console.error), 60000); // stagger by 1 min
 });
+
+// Reclassify temperatures every hour
+cron.schedule('0 * * * *', () => reclassifyTemperatures());
 
 // ─── Routes ──────────────────────────────────────────────────────────────────
 app.get('/trigger-all', async (req, res) => {
   try {
     const result = await runScan();
-    res.json({ success: true, message: `Scan complete - ${result.totalNew} new leads`, totalNew: result.totalNew });
+    res.json({ success: true, message: `Lead Scanner - ${result.totalNew} new leads`, totalNew: result.totalNew });
   } catch (e) {
-    console.error('Scan error:', e);
+    console.error('Lead scan error:', e);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+app.get('/trigger-watchdog', async (req, res) => {
+  try {
+    const result = await runWatchdogScan();
+    res.json({ success: true, message: `Network Watchdog - ${result.totalNew} new leads`, totalNew: result.totalNew });
+  } catch (e) {
+    console.error('Watchdog scan error:', e);
     res.status(500).json({ success: false, error: e.message });
   }
 });
@@ -379,7 +581,7 @@ app.post('/api/add-lead', (req, res) => {
 });
 
 app.delete('/api/leads', (req, res) => {
-  leadsData = { leads: [], manual: [] };
+  leadsData = { leads: [], watchdog: [], manual: [] };
   seenLeadKeys.clear();
   saveData();
   io.emit('leadsUpdated', leadsData);
@@ -402,9 +604,10 @@ app.get('/health', (req, res) => {
     status: 'ok',
     serperConfigured: !!SERPER_API_KEY,
     resendConfigured: !!RESEND_API_KEY,
-    leadsCount: leadsData.leads.length + leadsData.manual.length,
+    leadsCount: leadsData.leads.length + leadsData.watchdog.length + leadsData.manual.length,
+    watchdogCount: leadsData.watchdog.length,
     seenKeys: seenLeadKeys.size,
-    queryCount: SEARCH_QUERIES.length,
+    queryCount: SEARCH_QUERIES.length + WATCHDOG_QUERIES.length,
     time: new Date().toISOString(),
   });
 });
@@ -414,9 +617,11 @@ server.listen(PORT, () => {
   console.log(`Server on port ${PORT}`);
   console.log(`  Serper: ${SERPER_API_KEY ? 'configured' : 'MISSING - set SERPER_API_KEY'}`);
   console.log(`  Resend: ${RESEND_API_KEY ? 'configured' : 'not set - emails disabled'}`);
-  console.log(`  Queries: ${SEARCH_QUERIES.length} | Auto-scan: 8am + 6pm daily`);
+  console.log(`  Lead queries: ${SEARCH_QUERIES.length} | Watchdog queries: ${WATCHDOG_QUERIES.length}`);
+  console.log(`  Auto-scan: 8am + 6pm daily (both agents)`);
 
   if (SERPER_API_KEY) {
     setTimeout(() => runScan().catch(console.error), 5000);
+    setTimeout(() => runWatchdogScan().catch(console.error), 65000); // stagger
   }
 });
