@@ -143,8 +143,9 @@ const BLOCKED_DOMAINS = [
   'uhaul.com', 'pods.com', 'budgettruck.com', 'pensketruckrental.com',
 ];
 
-// ─── BUSINESS SIGNALS — if ANY ONE matches, result is a business ad ─────────
+// ─── BUSINESS SIGNALS — if ANY ONE matches, result is a business/contractor ──
 const BUSINESS_SIGNALS = [
+  // Corporate language
   'our team', 'we offer', 'we provide', 'our services', 'our company',
   'licensed and insured', 'fully licensed', 'fully insured',
   'family owned', 'locally owned', 'family-owned', 'locally-owned',
@@ -160,7 +161,25 @@ const BUSINESS_SIGNALS = [
   'years of experience', 'years in business', 'since 20', 'established in',
   'top rated', 'top 10 best', '5 star', 'five star', '4.9', '4.8',
   'eco-friendly', 'eco friendly', 'customer centric',
-  'skip to content', 'pay my bill', 'view schedule',
+  'skip to content', 'view schedule',
+
+  // Independent contractors advertising in Facebook groups
+  'does anyone need junk', 'does anyone need removal', 'anyone need junk',
+  'need it gone? i got you', 'i got you', 'we got you',
+  'we are out hauling', 'we are hauling', 'out hauling',
+  'let us know if we can help', 'we can help you', 'let us help',
+  'give us a call', 'give me a call', 'hit me up', 'hmu',
+  'dm me', 'inbox me', 'message me', 'text me', 'call me',
+  'affordable and reliable', 'affordable & reliable',
+  'i am affordable', 'we are affordable',
+  'dumpster rental', 'rent a dumpster',
+  'junk removal today', 'hauling today', 'removal today',
+  'same day pickup', 'same-day pickup',
+  'we do junk', 'i do junk', 'we handle junk', 'i handle junk',
+  'we remove junk', 'i remove junk', 'we haul junk', 'i haul junk',
+  'offering junk removal', 'offering hauling', 'offering removal',
+  'junk removal service available', 'services available',
+  'demolition', 'we also do',
 ];
 
 // ─── CUSTOMER NEED signals — at least one must match ─────────────────────────
