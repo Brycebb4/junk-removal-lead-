@@ -122,12 +122,28 @@
             <p><strong>Email:</strong> <a id="modalEmail" href="#" style="color:#3498db;font-weight:600;">—</a></p>
             <p><strong>Source:</strong> <a id="modalSource" href="#" target="_blank" style="color:#e74c3c;font-weight:600;">View Original Post</a></p>
             <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;">—</span></p>
-            <div class="modal-actions">
-                <button onclick="textLead()" style="background:#28a745;">Send Text Message (Template)</button>
-                <button onclick="emailLead()" style="background:#3498db;">Send Professional Email (Template)</button>
-                <button onclick="copyScript()" style="background:#f39c12;">Copy Call/Text Script</button>
-                <button id="contactBtn" style="background:#28a745;">Mark as Contacted + Remove</button>
-                <button onclick="closeModal()" style="background:#dc3545;">Close</button>
+
+            <!-- RESPONSE TEMPLATES -->
+            <div style="margin-top:20px;padding-top:15px;border-top:2px solid #f0f0f0;">
+                <h3 style="margin-bottom:12px;color:#2c3e50;">Quick Responses</h3>
+
+                <!-- Preview box -->
+                <div id="previewBox" style="display:none;background:#f8f9fa;border:1px solid #ddd;border-radius:8px;padding:15px;margin-bottom:12px;font-size:0.9em;white-space:pre-wrap;max-height:200px;overflow-y:auto;"></div>
+
+                <div class="modal-actions">
+                    <button onclick="sendGmail('junk')" style="background:#28a745;">📧 Junk Removal Quote (Gmail)</button>
+                    <button onclick="sendGmail('moving')" style="background:#3498db;">📧 Moving/Hauling Help (Gmail)</button>
+                    <button onclick="sendGmail('realtor')" style="background:#6f42c1;">📧 Realtor/Property Cleanout (Gmail)</button>
+                    <button onclick="sendGmail('facebook')" style="background:#1877f2;">📧 Facebook Post Reply (Gmail)</button>
+                    <button onclick="textLead('junk')" style="background:#20c997;">💬 Text: Junk Removal Quote</button>
+                    <button onclick="textLead('moving')" style="background:#17a2b8;">💬 Text: Moving/Hauling Help</button>
+                    <button onclick="previewResponse('junk')" style="background:#6c757d;">👁 Preview Junk Removal Response</button>
+                    <button onclick="previewResponse('moving')" style="background:#6c757d;">👁 Preview Moving Response</button>
+                    <button onclick="previewResponse('realtor')" style="background:#6c757d;">👁 Preview Realtor Response</button>
+                    <button onclick="copyScript()" style="background:#f39c12;">📋 Copy Call Script</button>
+                    <button id="contactBtn" style="background:#28a745;">✅ Mark as Contacted + Remove</button>
+                    <button onclick="closeModal()" style="background:#dc3545;">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -140,12 +156,40 @@
         let manualLeads = [];
         let currentLead = null;
 
-        const COMPANY = "Junk Removal Guys";
+        const COMPANY = "Junk Removal Boys";
         const PHONE = "(513) 555-1234";
-        const TEAM = "the Junk Removal Guys team";
+        const GMAIL = "junkboysremoval394@gmail.com";
 
-        const TEXT_TEMPLATE = `Hi {Name}, this is ${TEAM} with ${COMPANY}. I saw your post about needing {Description} at {Address}.\n\nWe specialize in fast clean-outs with same-day service and competitive pricing.\n\nWould you like a free no-obligation quote today? Just reply here or call me at ${PHONE}.\n\nLooking forward to helping!`;
-        const EMAIL_BODY = `Hi {Name},\n\nI'm ${TEAM} with ${COMPANY}. I came across your listing about needing {Description} at {Address}.\n\nWe handle full clean-outs, furniture, appliances, yard waste - everything. Same-day service, transparent pricing, no hidden fees.\n\nWould you like a free on-site quote? Reply or call/text ${PHONE}.\n\nBest,\n${TEAM}\n${COMPANY}\n${PHONE}\njunkremovalguys394@gmail.com`;
+        // ─── RESPONSE TEMPLATES (tailored per lead type) ─────────────
+        function getTemplates(lead) {
+            const name = lead.name || "there";
+            const desc = lead.description || lead.title || "junk removal";
+            const addr = lead.address || "your area";
+            const shortDesc = desc.substring(0, 60);
+
+            return {
+                junk: {
+                    subject: `Free Junk Removal Quote - ${addr}`,
+                    body: `Hi ${name},\n\nI saw your post about needing ${shortDesc} in ${addr}. I'm with ${COMPANY} and we'd love to help!\n\nWe offer:\n- Same-day junk removal & hauling\n- Furniture, appliances, yard waste, garage cleanouts - you name it\n- Transparent flat-rate pricing (no hidden fees)\n- We do all the heavy lifting\n\nI can give you a free no-obligation quote right now over the phone, or swing by for a quick look.\n\nCall or text me anytime: ${PHONE}\n\nLooking forward to getting that taken care of for you!\n\nBest,\n${COMPANY}\n${PHONE}\n${GMAIL}`,
+                    text: `Hi ${name}! I saw your post about needing ${shortDesc} in ${addr}. I'm with ${COMPANY} - we do same-day junk removal, furniture, appliances, full cleanouts. Free quotes, no hidden fees. Want me to swing by or give you a price over the phone? Call/text me: ${PHONE}`
+                },
+                moving: {
+                    subject: `Moving Help & Hauling - Free Quote - ${addr}`,
+                    body: `Hi ${name},\n\nI noticed you're looking for help with moving/hauling in ${addr}. I'm with ${COMPANY} and this is exactly what we do!\n\nWe can help with:\n- Loading & hauling furniture, boxes, and heavy items\n- Removing anything you don't want to take with you\n- Full apartment/house cleanouts after move-out\n- Same-day availability in most cases\n\nWe make moving stress-free - you point, we haul. Flat-rate pricing so you know the cost upfront.\n\nWant a free quote? Just reply here or call/text me: ${PHONE}\n\nHappy to help make your move easier!\n\nBest,\n${COMPANY}\n${PHONE}\n${GMAIL}`,
+                    text: `Hi ${name}! Saw you need help moving/hauling in ${addr}. ${COMPANY} here - we load, haul, and remove anything you don't want. Same-day available, flat-rate pricing. Want a free quote? Call/text: ${PHONE}`
+                },
+                realtor: {
+                    subject: `Property Cleanout Services - ${COMPANY} - ${addr}`,
+                    body: `Hi ${name},\n\nI came across your listing regarding a property cleanout in ${addr}. I'm with ${COMPANY} and we specialize in working with realtors, landlords, and property managers.\n\nOur property services include:\n- Full tenant cleanouts (we've seen it all)\n- Estate cleanouts & foreclosure clearing\n- Pre-listing junk removal to get homes show-ready\n- Appliance, furniture, and debris removal\n- Fast turnaround - most jobs done same day\n\nWe understand time is money in real estate. We work on YOUR schedule and can have a property cleared and broom-swept fast.\n\nI'd love to be your go-to removal crew. Want to set up a quick call?\n\nCall/text: ${PHONE}\n\nBest,\n${COMPANY}\n${PHONE}\n${GMAIL}`,
+                    text: `Hi ${name}! I'm with ${COMPANY}. Saw your post about a property cleanout in ${addr}. We specialize in tenant cleanouts, estate clearing, and getting properties show-ready fast. Same-day turnaround. Want a free quote? ${PHONE}`
+                },
+                facebook: {
+                    subject: `Re: Your Junk Removal Post - ${addr}`,
+                    body: `Hi ${name},\n\nI saw your Facebook post about needing ${shortDesc} in ${addr}. I'm with ${COMPANY} and we service your area!\n\nWe're a local crew that handles junk removal, hauling, cleanouts, furniture, appliances - pretty much anything you need gone. Same-day service is usually available and our pricing is straightforward (no surprise fees).\n\nI'd be happy to give you a free quote - just reply to this email or give me a call/text.\n\nPhone: ${PHONE}\nEmail: ${GMAIL}\n\nHope to hear from you!\n\nBest,\n${COMPANY}`,
+                    text: `Hi ${name}! Saw your Facebook post about ${shortDesc} in ${addr}. I'm with ${COMPANY} - local junk removal & hauling. Same-day service, fair pricing. Can I give you a free quote? Call/text: ${PHONE}`
+                }
+            };
+        }
 
         function loadLocal() {
             const saved = localStorage.getItem('junkScanner');
@@ -230,20 +274,38 @@
         }
         function closeModal() { document.getElementById('leadModal').classList.remove('active'); }
 
-        function textLead() {
-            if (!currentLead?.phone) return alert("No phone number");
-            const msg = TEXT_TEMPLATE.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
-            window.location.href = `sms:${currentLead.phone}?body=${encodeURIComponent(msg)}`;
+        // Open Gmail compose with pre-filled template
+        function sendGmail(type) {
+            if (!currentLead) return;
+            const t = getTemplates(currentLead)[type];
+            if (!t) return;
+            // If lead has an email, send TO them; otherwise open blank compose to paste/forward
+            const to = currentLead.email || '';
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(t.subject)}&body=${encodeURIComponent(t.body)}`;
+            window.open(gmailUrl, '_blank');
         }
-        function emailLead() {
-            if (!currentLead?.email) return alert("No email");
-            const body = EMAIL_BODY.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
-            window.open(`mailto:${currentLead.email}?subject=${encodeURIComponent(`Free Junk Removal Quote - ${currentLead.address}`)}&body=${encodeURIComponent(body)}`, '_blank');
+
+        // Open SMS app with pre-filled text
+        function textLead(type) {
+            if (!currentLead?.phone) return alert("No phone number for this lead");
+            const t = getTemplates(currentLead)[type || 'junk'];
+            window.location.href = `sms:${currentLead.phone}?body=${encodeURIComponent(t.text)}`;
         }
+
+        // Preview a response template in the modal
+        function previewResponse(type) {
+            if (!currentLead) return;
+            const t = getTemplates(currentLead)[type];
+            const box = document.getElementById('previewBox');
+            box.style.display = 'block';
+            box.textContent = `SUBJECT: ${t.subject}\n\n${t.body}`;
+        }
+
+        // Copy call/text script to clipboard
         function copyScript() {
             if (!currentLead) return;
-            const script = TEXT_TEMPLATE.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
-            navigator.clipboard.writeText(script).then(() => alert("Script copied!"));
+            const t = getTemplates(currentLead)['junk'];
+            navigator.clipboard.writeText(t.text).then(() => alert("Script copied to clipboard!"));
         }
 
         async function runScan() {

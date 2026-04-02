@@ -17,7 +17,7 @@ app.use(express.static('.'));
 const PORT           = process.env.PORT           || 3000;
 const SERPER_API_KEY = process.env.SERPER_API_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const ALERT_EMAIL    = process.env.ALERT_EMAIL    || 'junkremovalguys394@gmail.com';
+const ALERT_EMAIL    = process.env.ALERT_EMAIL    || 'junkboysremoval394@gmail.com';
 const DATA_FILE      = './leads.json';
 
 // ─── Persistent store (single agent: "leads" + manual entry) ─────────────────
