@@ -384,6 +384,71 @@ app.delete('/api/leads/:key', (req, res) => {
   res.json({ success: true });
 });
 
+// ─── Diagnostic endpoint — shows raw Tavily results vs filtered ──────────────
+app.get('/api/debug-scan', async (req, res) => {
+  const testQuery = '"junk removal" Cincinnati 2026';
+  const rawResults = await searchTavily(testQuery);
+  const filtered = rawResults.map(r => {
+    const text = `${r.title || ''} ${r.content || ''}`;
+    const url = r.url || '';
+
+    // Check spam domains
+    const spamDomains = [
+      'yelp.com', 'angi.com', 'thumbtack.com', 'homeadvisor.com',
+      'angieslist.com', 'houzz.com', 'porch.com', '1800gotjunk.com', 'junk-king.com',
+      'collegehunks.com', 'loadup.com', 'junkluggers.com', 'junkremoval.com',
+      'gotjunk.com', 'bagster.com', 'dumpsters.com', 'wastepro.com',
+      'rumpke.com', 'republic-services.com', 'wm.com', 'cms-junk.com',
+      'goodfellasjunk.com', 'holtshauling.com', 'tristatejunk.com',
+    ];
+    const blockedByDomain = spamDomains.some(d => url.includes(d));
+
+    // Check business signals
+    const businessSignals = [
+      'our team', 'we offer', 'we provide', 'our services', 'our company',
+      'licensed and insured', 'fully licensed', 'fully insured',
+      'family owned', 'locally owned', 'family-owned', 'locally-owned',
+      'serving the greater', 'serving cincinnati', 'serving dayton',
+      'free estimates', 'get a free estimate', 'book online', 'schedule a pickup',
+      'schedule online', 'pay my bill', 'we specialize in', 'our crew',
+      'our professionals', 'contact us today', 'call us today',
+      'junk removal company', 'hauling company', 'removal service',
+      'visit our website', 'check out our', 'follow us on',
+    ];
+    const businessHits = businessSignals.filter(k => text.toLowerCase().includes(k));
+
+    // Check need keywords
+    const needKeywords = [
+      'need', 'looking for', 'anyone', 'recommend', 'help', 'want', 'hire',
+      'haul away', 'pick up', 'remove', 'cleanout', 'clean out', 'dispose',
+      'get rid', 'junk', 'clutter', 'debris', 'furniture', 'appliance',
+      'moving', 'clearing out', 'too much stuff', 'overwhelmed',
+    ];
+    const matchedNeeds = needKeywords.filter(k => text.toLowerCase().includes(k));
+
+    return {
+      title: r.title,
+      url: r.url,
+      snippet: (r.content || '').substring(0, 150),
+      blockedByDomain,
+      businessHits: businessHits,
+      businessBlocked: businessHits.length >= 2,
+      matchedNeeds,
+      passesNeedFilter: matchedNeeds.length > 0,
+      wouldBeKept: !blockedByDomain && businessHits.length < 2 && matchedNeeds.length > 0,
+    };
+  });
+
+  res.json({
+    query: testQuery,
+    tavilyConfigured: !!TAVILY_API_KEY,
+    rawResultCount: rawResults.length,
+    rawResults: rawResults.map(r => ({ title: r.title, url: r.url, snippet: (r.content || '').substring(0, 150) })),
+    filterAnalysis: filtered,
+    keptCount: filtered.filter(f => f.wouldBeKept).length,
+  });
+});
+
 app.get('/health', (req, res) => {
   res.json({
     status:           'ok',
