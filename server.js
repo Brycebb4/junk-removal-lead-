@@ -47,52 +47,52 @@ const SEARCH_QUERIES = {
     'site:craigslist.org "need junk removed" Ohio',
   ],
   socialMedia: [
-    '"junk removal" Cincinnati 2026',
-    '"haul away" Cincinnati Facebook OR Nextdoor 2026',
+    '"junk removal" Cincinnati',
+    '"haul away" Cincinnati Facebook OR Nextdoor',
     '"need someone to remove" Cincinnati junk OR furniture OR appliances',
     '"anyone know junk removal" Cincinnati OR Dayton',
     '"looking for junk removal" Cincinnati Northern Kentucky',
     'Nextdoor "junk removal" Cincinnati recommendation',
-    '"cleanout" Cincinnati moving help 2026',
-    '"garage cleanout" Cincinnati 2026',
+    '"cleanout" Cincinnati moving help',
+    '"garage cleanout" Cincinnati',
     '"need junk hauled" Cincinnati Dayton',
-    '"junk removal" Florence KY OR Erlanger OR Covington 2026',
+    '"junk removal" Florence KY OR Erlanger OR Covington',
   ],
   realEstate: [
-    '"realtor" Cincinnati "need junk removed" OR "cleanout" 2026',
-    '"real estate agent" Cincinnati "haul away" OR "junk removal" 2026',
+    '"realtor" Cincinnati "need junk removed" OR "cleanout"',
+    '"real estate agent" Cincinnati "haul away" OR "junk removal"',
     '"listing prep" Cincinnati "junk removal" OR "cleanout"',
-    '"property manager" Cincinnati "need someone" cleanout OR junk 2026',
-    '"landlord" Cincinnati tenant "moved out" cleanout junk 2026',
-    '"selling my house" Cincinnati "junk removal" help 2026',
-    '"getting ready to sell" Cincinnati cleanout haul 2026',
-    '"preparing to list" Cincinnati junk cleanout haul 2026',
+    '"property manager" Cincinnati "need someone" cleanout OR junk',
+    '"landlord" Cincinnati tenant "moved out" cleanout junk',
+    '"selling my house" Cincinnati "junk removal" help',
+    '"getting ready to sell" Cincinnati cleanout haul',
+    '"preparing to list" Cincinnati junk cleanout haul',
   ],
   marketplace: [
-    'Facebook Marketplace "junk removal" Cincinnati 2026',
-    'OfferUp "junk removal" Cincinnati OR Dayton 2026',
-    '"free pickup" Cincinnati furniture appliance junk 2026',
-    '"someone to haul" Cincinnati 2026',
-    'Reddit "junk removal" Cincinnati recommendation 2026',
+    'Facebook Marketplace "junk removal" Cincinnati',
+    'OfferUp "junk removal" Cincinnati OR Dayton',
+    '"free pickup" Cincinnati furniture appliance junk',
+    '"someone to haul" Cincinnati',
+    'Reddit "junk removal" Cincinnati recommendation',
     'site:reddit.com "junk removal" Cincinnati OR Dayton',
   ],
   eventSeason: [
-    '"spring cleanout" Cincinnati 2026',
-    '"moving" Cincinnati "junk removal" 2026',
-    '"clearing out" Cincinnati basement OR attic OR garage 2026',
-    '"storm debris" Cincinnati OR Dayton 2026',
-    '"renovation" Cincinnati "haul away" debris 2026',
-    '"home renovation" Cincinnati junk debris removal 2026',
+    '"spring cleanout" Cincinnati',
+    '"moving" Cincinnati "junk removal"',
+    '"clearing out" Cincinnati basement OR attic OR garage',
+    '"storm debris" Cincinnati OR Dayton',
+    '"renovation" Cincinnati "haul away" debris',
+    '"home renovation" Cincinnati junk debris removal',
   ],
   manual: [
-    '"need help moving" Cincinnati OR Dayton OR "Northern Kentucky" 2026',
-    '"moving out of my apartment" Cincinnati "need help" 2026',
-    '"anyone help me move" Cincinnati furniture haul 2026',
-    '"moving out" Cincinnati "looking for help" furniture stuff 2026',
-    '"need someone to haul" Cincinnati apartment moving 2026',
-    '"college" Cincinnati OR Dayton "moving out" "need help" 2026',
-    '"single" Cincinnati apartment "need help" moving OR hauling 2026',
-    '"does anyone know" Cincinnati moving help haul furniture 2026',
+    '"need help moving" Cincinnati OR Dayton OR "Northern Kentucky"',
+    '"moving out of my apartment" Cincinnati "need help"',
+    '"anyone help me move" Cincinnati furniture haul',
+    '"moving out" Cincinnati "looking for help" furniture',
+    '"need someone to haul" Cincinnati apartment moving',
+    '"college" Cincinnati OR Dayton "moving out" "need help"',
+    '"single" Cincinnati apartment "need help" moving OR hauling',
+    '"does anyone know" Cincinnati moving help haul furniture',
   ],
 };
 
@@ -113,8 +113,8 @@ async function searchTavily(query) {
         search_depth:  'advanced',
         max_results:    8,
         include_answer: false,
-        // Only pull results from the last 3 days — this is the KEY fix for stale leads
-        days:           3,
+        // Only pull results from the last 7 days for freshness
+        days:           7,
       }),
     });
 
@@ -386,7 +386,7 @@ app.delete('/api/leads/:key', (req, res) => {
 
 // ─── Diagnostic endpoint — shows raw Tavily results vs filtered ──────────────
 app.get('/api/debug-scan', async (req, res) => {
-  const testQuery = '"junk removal" Cincinnati 2026';
+  const testQuery = '"junk removal" Cincinnati';
   const rawResults = await searchTavily(testQuery);
   const filtered = rawResults.map(r => {
     const text = `${r.title || ''} ${r.content || ''}`;
