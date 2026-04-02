@@ -15,7 +15,7 @@ app.use(express.json());
 app.use(express.static('.'));
 
 const PORT            = process.env.PORT            || 3000;
-const TAVILY_API_KEY  = process.env.TAVILY_API_KEY;
+const SERPER_API_KEY  = process.env.SERPER_API_KEY;
 const RESEND_API_KEY  = process.env.RESEND_API_KEY;
 const ALERT_EMAIL     = process.env.ALERT_EMAIL     || 'junkremovalguys394@gmail.com';
 const DATA_FILE       = './leads.json';
@@ -96,38 +96,43 @@ const SEARCH_QUERIES = {
   ],
 };
 
-// ─── Call Tavily with freshness filter ───────────────────────────────────────
-async function searchTavily(query) {
-  if (!TAVILY_API_KEY) {
-    console.warn('⚠️  TAVILY_API_KEY not set – skipping search');
+// ─── Call Serper.dev Google Search API ────────────────────────────────────────
+async function searchSerper(query) {
+  if (!SERPER_API_KEY) {
+    console.warn('⚠️  SERPER_API_KEY not set – skipping search');
     return [];
   }
 
   try {
-    const response = await fetch('https://api.tavily.com/search', {
+    const response = await fetch('https://google.serper.dev/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        api_key:        TAVILY_API_KEY,
-        query,
-        search_depth:  'advanced',
-        max_results:    8,
-        include_answer: false,
-        // Only pull results from the last 7 days for freshness
-        days:           7,
+        q: query,
+        num: 8,
+        tbs: 'qdr:w',  // Limit to past week for freshness
       }),
     });
 
     if (!response.ok) {
       const err = await response.text();
-      console.error(`Tavily error for "${query}":`, err);
+      console.error(`Serper error for "${query}":`, err);
       return [];
     }
 
     const data = await response.json();
-    return data.results || [];
+    // Normalize Serper results to match our expected format { title, url, content }
+    const organic = data.organic || [];
+    return organic.map(r => ({
+      title:   r.title || '',
+      url:     r.link  || '',
+      content: r.snippet || '',
+    }));
   } catch (e) {
-    console.error('Tavily fetch error:', e.message);
+    console.error('Serper fetch error:', e.message);
     return [];
   }
 }
@@ -297,7 +302,7 @@ async function runScan() {
     const newForAgent = [];
 
     for (const query of queries) {
-      const results = await searchTavily(query);
+      const results = await searchSerper(query);
 
       for (const result of results) {
         const lead = extractLeadFromResult(result, agentKey);
@@ -331,9 +336,9 @@ async function runScan() {
   return { totalNew, leads: allNewLeads };
 }
 
-// ─── Auto-scan every 3 hours ──────────────────────────────────────────────────
-// Runs at: 6am, 9am, 12pm, 3pm, 6pm, 9pm daily
-cron.schedule('0 6,9,12,15,18,21 * * *', () => {
+// ─── Auto-scan 2x daily to stay within Serper free tier ─────────────────────
+// Runs at: 8am and 6pm daily (~96 queries/day = ~2,880/month)
+cron.schedule('0 8,18 * * *', () => {
   console.log('⏰ Cron-triggered scan');
   runScan().catch(console.error);
 });
@@ -392,16 +397,16 @@ app.get('/api/debug-scan', async (req, res) => {
   let rawApiResponse = null;
   let rawApiError = null;
   try {
-    const directRes = await fetch('https://api.tavily.com/search', {
+    const directRes = await fetch('https://google.serper.dev/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'X-API-KEY': SERPER_API_KEY,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        api_key: TAVILY_API_KEY,
-        query: testQuery,
-        search_depth: 'advanced',
-        max_results: 5,
-        include_answer: false,
-        days: 7,
+        q: testQuery,
+        num: 5,
+        tbs: 'qdr:w',
       }),
     });
     rawApiResponse = {
@@ -413,7 +418,9 @@ app.get('/api/debug-scan', async (req, res) => {
     rawApiError = e.message;
   }
 
-  const rawResults = rawApiResponse?.body?.results || [];
+  const rawResults = (rawApiResponse?.body?.organic || []).map(r => ({
+    title: r.title || '', url: r.link || '', content: r.snippet || '',
+  }));
   const filtered = rawResults.map(r => {
     const text = `${r.title || ''} ${r.content || ''}`;
     const url = r.url || '';
@@ -467,8 +474,8 @@ app.get('/api/debug-scan', async (req, res) => {
 
   res.json({
     query: testQuery,
-    tavilyConfigured: !!TAVILY_API_KEY,
-    tavilyKeyPrefix: TAVILY_API_KEY ? TAVILY_API_KEY.substring(0, 12) + '...' : 'NOT SET',
+    serperConfigured: !!SERPER_API_KEY,
+    serperKeyPrefix: SERPER_API_KEY ? SERPER_API_KEY.substring(0, 12) + '...' : 'NOT SET',
     rawApiResponse,
     rawApiError,
     rawResultCount: rawResults.length,
@@ -481,7 +488,7 @@ app.get('/api/debug-scan', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({
     status:           'ok',
-    tavilyConfigured: !!TAVILY_API_KEY,
+    serperConfigured: !!SERPER_API_KEY,
     resendConfigured: !!RESEND_API_KEY,
     leadsCount:       Object.values(leadsData).reduce((a, arr) => a + arr.length, 0),
     seenKeys:         seenLeadKeys.size,
@@ -507,12 +514,12 @@ app.post('/api/test-email', async (req, res) => {
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(`🚀 Server on port ${PORT}`);
-  console.log(`   Tavily: ${TAVILY_API_KEY ? '✅ configured' : '❌ MISSING – set TAVILY_API_KEY'}`);
+  console.log(`   Serper: ${SERPER_API_KEY ? '✅ configured' : '❌ MISSING – set SERPER_API_KEY'}`);
   console.log(`   Resend: ${RESEND_API_KEY ? '✅ configured' : '⚠️  not set – emails disabled'}`);
-  console.log(`   Auto-scan: every 3 hrs (6am, 9am, 12pm, 3pm, 6pm, 9pm)`);
+  console.log(`   Auto-scan: 8am and 6pm daily`);
 
   // Run one scan on startup so you get leads immediately
-  if (TAVILY_API_KEY) {
+  if (SERPER_API_KEY) {
     setTimeout(() => runScan().catch(console.error), 5000);
   }
 });
