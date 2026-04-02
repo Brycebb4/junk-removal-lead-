@@ -387,7 +387,33 @@ app.delete('/api/leads/:key', (req, res) => {
 // ─── Diagnostic endpoint — shows raw Tavily results vs filtered ──────────────
 app.get('/api/debug-scan', async (req, res) => {
   const testQuery = '"junk removal" Cincinnati';
-  const rawResults = await searchTavily(testQuery);
+
+  // Direct API call to see the FULL response including errors
+  let rawApiResponse = null;
+  let rawApiError = null;
+  try {
+    const directRes = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query: testQuery,
+        search_depth: 'advanced',
+        max_results: 5,
+        include_answer: false,
+        days: 7,
+      }),
+    });
+    rawApiResponse = {
+      status: directRes.status,
+      statusText: directRes.statusText,
+      body: await directRes.json().catch(() => directRes.text()),
+    };
+  } catch (e) {
+    rawApiError = e.message;
+  }
+
+  const rawResults = rawApiResponse?.body?.results || [];
   const filtered = rawResults.map(r => {
     const text = `${r.title || ''} ${r.content || ''}`;
     const url = r.url || '';
@@ -442,6 +468,9 @@ app.get('/api/debug-scan', async (req, res) => {
   res.json({
     query: testQuery,
     tavilyConfigured: !!TAVILY_API_KEY,
+    tavilyKeyPrefix: TAVILY_API_KEY ? TAVILY_API_KEY.substring(0, 12) + '...' : 'NOT SET',
+    rawApiResponse,
+    rawApiError,
     rawResultCount: rawResults.length,
     rawResults: rawResults.map(r => ({ title: r.title, url: r.url, snippet: (r.content || '').substring(0, 150) })),
     filterAnalysis: filtered,
