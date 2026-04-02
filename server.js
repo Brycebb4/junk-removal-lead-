@@ -50,53 +50,53 @@ const LOCATIONS = [
   'Kettering', 'Miamisburg', 'Centerville', 'Huber Heights', 'Xenia',
 ];
 
-// ─── Search queries — CUSTOMERS ONLY ────────────────────────────────────────
-// Grouped by intent. Every query targets customer language, not business SEO.
+// ─── Search queries — COMMUNITY PLATFORMS ONLY (no Google organic) ───────────
+// Only Facebook groups, Craigslist, Reddit, Nextdoor — where REAL customers post.
+// Zero Google organic results (those are always businesses).
 const SEARCH_QUERIES = [
 
-  // === CUSTOMERS SEARCHING GOOGLE for junk removal ===
-  '"looking for junk removal" Cincinnati OR Dayton OR "Northern Kentucky"',
-  '"need junk removal" Cincinnati OR Dayton OR Florence OR Covington',
-  '"anyone know" "junk removal" Cincinnati OR Dayton OR "Northern Kentucky"',
-  '"recommend" "junk removal" Cincinnati OR Dayton',
-  '"who does junk removal" Cincinnati OR Dayton OR "Northern Kentucky"',
-  '"junk removal near me" Cincinnati OR Dayton',
+  // === FACEBOOK GROUPS — junk removal requests ===
+  'site:facebook.com/groups "need junk removal" Cincinnati OR Dayton OR Ohio OR Kentucky',
+  'site:facebook.com/groups "anyone recommend" junk removal Cincinnati OR Dayton',
+  'site:facebook.com/groups "anyone know" junk removal Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com/groups "looking for junk removal" Cincinnati OR Dayton OR Covington OR Florence',
+  'site:facebook.com/groups "need someone to haul" Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "need junk removed" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com/groups "who does junk removal" Cincinnati OR Dayton',
+  'site:facebook.com/groups "junk removal" "any recommendations" Cincinnati OR Dayton OR Ohio',
 
-  // === HAULING / U-HAUL / MOVING keywords ===
-  '"need someone to haul" Cincinnati OR Dayton OR "Northern Kentucky"',
-  '"haul away" "need help" Cincinnati OR Dayton OR Covington',
-  '"need a haul" Cincinnati OR Dayton furniture OR junk OR appliance',
-  '"U-Haul" OR "Uhaul" Cincinnati "junk" OR "haul away" OR "clean out"',
-  '"moving out" Cincinnati OR Dayton "need help" OR "junk removal"',
-  '"moving" "need junk removed" Cincinnati OR Dayton OR Florence',
-  '"help moving" Cincinnati OR Dayton furniture OR stuff OR hauling',
+  // === FACEBOOK GROUPS — hauling / moving / U-Haul requests ===
+  'site:facebook.com/groups "need help moving" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com/groups "haul away" Cincinnati OR Dayton OR Covington "need" OR "looking"',
+  'site:facebook.com/groups "moving out" "need help" Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "need a truck" OR "need a trailer" Cincinnati OR Dayton haul OR move',
+  'site:facebook.com/groups "U-Haul" OR "Uhaul" Cincinnati OR Dayton "help" OR "need"',
+  'site:facebook.com/groups "getting rid of" furniture OR junk OR stuff Cincinnati OR Dayton',
+  'site:facebook.com/groups "clean out" "my garage" OR "my basement" OR "my attic" Cincinnati OR Dayton',
 
-  // === FACEBOOK GROUP POSTS — people asking for help ===
-  'site:facebook.com "need junk removal" Cincinnati OR Dayton',
-  'site:facebook.com "anyone recommend" "junk removal" Cincinnati',
-  'site:facebook.com "haul away" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com "need help moving" Cincinnati OR Dayton',
-  'site:facebook.com "looking for someone" junk OR haul OR remove Cincinnati',
-  'site:facebook.com "clean out" Cincinnati OR Dayton "need" OR "looking for"',
+  // === FACEBOOK GROUPS — real estate / property cleanout requests ===
+  'site:facebook.com/groups "tenant left" junk OR trash OR cleanout Cincinnati OR Dayton',
+  'site:facebook.com/groups "estate cleanout" OR "estate clean out" Cincinnati OR Dayton',
+  'site:facebook.com/groups "foreclosure" cleanout OR cleanup Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "landlord" "clean out" OR "junk removal" Cincinnati OR Dayton',
+  'site:facebook.com/groups "selling my house" junk OR cleanout OR haul Cincinnati OR Dayton',
 
-  // === REDDIT / NEXTDOOR / CRAIGSLIST — community posts ===
-  'site:reddit.com "junk removal" Cincinnati OR Dayton recommend',
-  'site:craigslist.org "junk removal" Cincinnati OR Dayton',
-  'site:craigslist.org "haul away" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:craigslist.org "need junk removed" Ohio OR Kentucky',
-  'Nextdoor "junk removal" Cincinnati OR Dayton recommendation',
+  // === CRAIGSLIST — wanted section / people requesting services ===
+  'site:craigslist.org "need junk removal" Cincinnati OR Dayton OR Ohio',
+  'site:craigslist.org "need junk removed" Cincinnati OR Dayton OR Kentucky',
+  'site:craigslist.org "haul away" "need" OR "looking for" Cincinnati OR Dayton',
+  'site:craigslist.org "clean out" "need" OR "help" Cincinnati OR Dayton',
+  'site:craigslist.org "free" "come pick up" OR "must pick up" Cincinnati OR Dayton furniture OR junk',
 
-  // === REAL ESTATE — realtors, landlords, property managers needing cleanout ===
-  '"realtor" OR "real estate agent" Cincinnati "need cleanout" OR "need junk removed"',
-  '"landlord" Cincinnati OR Dayton "tenant left" OR "tenant moved out" junk OR cleanout',
-  '"property manager" Cincinnati OR Dayton cleanout OR "junk removal" needed',
-  '"eviction cleanout" Cincinnati OR Dayton OR "Northern Kentucky"',
-  '"foreclosure" Cincinnati OR Dayton cleanout OR "junk removal"',
-  '"estate cleanout" Cincinnati OR Dayton "need help" OR "looking for"',
-  '"selling my house" Cincinnati OR Dayton "junk" OR "cleanout" OR "haul"',
-  '"preparing to sell" OR "getting ready to list" Cincinnati cleanout OR junk',
-  '"rental turnover" OR "rental cleanout" Cincinnati OR Dayton junk OR haul',
-  '"flip" OR "flipping" Cincinnati OR Dayton "junk removal" OR cleanout OR debris',
+  // === REDDIT — people asking for recommendations ===
+  'site:reddit.com "junk removal" Cincinnati OR Dayton recommend OR recommendation OR suggestions',
+  'site:reddit.com "haul away" OR "hauling" Cincinnati OR Dayton "need" OR "looking for" OR "help"',
+  'site:reddit.com "moving" Cincinnati OR Dayton "junk" OR "get rid of" OR "cleanout"',
+
+  // === NEXTDOOR — neighborhood requests ===
+  'site:nextdoor.com "junk removal" Cincinnati OR Dayton recommend OR "need" OR "looking for"',
+  'site:nextdoor.com "haul away" OR "hauling" Cincinnati OR Dayton',
+  'site:nextdoor.com "clean out" OR "cleanout" Cincinnati OR Dayton "need" OR "help"',
 ];
 
 // ─── Serper.dev Google Search ────────────────────────────────────────────────
@@ -180,6 +180,23 @@ const BUSINESS_SIGNALS = [
   'offering junk removal', 'offering hauling', 'offering removal',
   'junk removal service available', 'services available',
   'demolition', 'we also do',
+
+  // Marketing / promotional language
+  'specials are on', 'spring special', 'spring clean', 'time to clear the clutter',
+  'reclaim your', 'start fresh', 'done right', 'we make cleanouts',
+  'muscles. manners', 'professional service', 'real people who care',
+  'show up on time', 'treat your home', 'clean slate',
+  'not some big', 'not a franchise', 'we\'re local', 'we are local',
+  'heavy lifting done', 'we do the heavy', 'we handle the heavy',
+  'just call', 'just text', 'reach out to us', 'get in touch',
+  'before and after', 'check out this', 'look at this job',
+  'another satisfied', 'happy customer', 'great job today',
+  'job we did', 'job we completed', 'finished this', 'completed this',
+  'here\'s a job', 'today\'s job', 'today\'s haul', 'today\'s load',
+  'we cleared', 'we hauled', 'we removed', 'we cleaned out',
+  'booking now', 'spots available', 'slots available', 'openings available',
+  'starting at $', 'prices start', 'as low as $',
+  'mention this post', 'use code', 'discount', '% off',
 ];
 
 // ─── CUSTOMER NEED signals — at least one must match ─────────────────────────
@@ -193,12 +210,20 @@ const CUSTOMER_SIGNALS = [
   'landlord', 'property manager', 'rental turnover', 'flip',
 ];
 
+// ─── ALLOWED PLATFORMS — only these domains can produce leads ────────────────
+const ALLOWED_PLATFORMS = [
+  'facebook.com', 'reddit.com', 'craigslist.org', 'nextdoor.com',
+];
+
 // ─── Extract a lead from a search result ─────────────────────────────────────
 function extractLead(result) {
   const text  = `${result.title || ''} ${result.content || ''}`.toLowerCase();
   const url   = result.url || '';
   const title = result.title || '';
   const snippet = result.content || '';
+
+  // 0. HARD FILTER — result MUST be from an allowed community platform
+  if (!ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p))) return null;
 
   // 1. Block known business/directory domains
   if (BLOCKED_DOMAINS.some(d => url.toLowerCase().includes(d))) return null;
