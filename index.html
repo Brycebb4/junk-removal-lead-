@@ -40,6 +40,7 @@
         .lead-item.cold-lead { border-left-color: #6c757d; background: #f8f9fa; }
         .lead-contact { font-size: 0.85em; color: #28a745; margin-top: 4px; }
         .lead-platform { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #1976d2; margin-left: 8px; }
+        .lead-platform.linkedin { background: #dce6f1; color: #0077b5; }
         .lead-temp { display: inline-block; font-size: 0.7em; padding: 2px 8px; border-radius: 10px; margin-left: 6px; font-weight: 600; }
         .lead-temp.hot { background: #f8d7da; color: #721c24; }
         .lead-temp.cold { background: #e2e3e5; color: #383d41; }
@@ -298,9 +299,10 @@
                 const temp = getTemp(lead);
                 const div = document.createElement('div');
                 div.className = `lead-item ${temp}-lead`;
+                const platClass = (lead.platform || '').toLowerCase();
                 div.innerHTML = `
                     ${temp === 'hot' ? '🔥' : '❄️'} <strong>${lead.name || 'Potential Customer'}</strong>
-                    <span class="lead-platform">${lead.platform || 'Web'}</span>
+                    <span class="lead-platform ${platClass}">${lead.platform || 'Web'}</span>
                     <span class="lead-temp ${temp}">${temp === 'hot' ? 'HOT' : 'COLD'}</span>
                     ${lead.professionalType ? '<span class="lead-type">' + lead.professionalType + '</span>' : ''}
                     <br/><span style="color:#555;">${(lead.description || lead.title || 'Junk removal needed').substring(0, 100)}...</span>

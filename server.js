@@ -154,9 +154,21 @@ const WATCHDOG_QUERIES = [
   // === NEXTDOOR — professional referral posts ===
   'site:nextdoor.com realtor OR landlord "junk removal" OR cleanout OR "haul away" Cincinnati OR Dayton',
   'site:nextdoor.com "estate sale" OR "estate cleanout" OR "tenant left" Cincinnati OR Dayton',
+
+  // === LINKEDIN — find realtors, property managers, estate pros directly ===
+  'site:linkedin.com/in realtor OR "real estate agent" Cincinnati OR Dayton "cleanout" OR "junk removal"',
+  'site:linkedin.com/in "property manager" Cincinnati OR Dayton OR Ohio',
+  'site:linkedin.com/in "real estate agent" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:linkedin.com/in realtor Cincinnati OR Dayton "property" OR "listing" OR "homes"',
+  'site:linkedin.com/in "estate sale" OR "estate liquidator" Cincinnati OR Dayton OR Ohio',
+  'site:linkedin.com/in "property management" Cincinnati OR Dayton OR Ohio',
+  'site:linkedin.com/in "probate attorney" OR "probate lawyer" Cincinnati OR Dayton',
+  'site:linkedin.com/in "house flipper" OR "real estate investor" Cincinnati OR Dayton',
+  'site:linkedin.com/posts realtor OR "real estate" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
+  'site:linkedin.com/posts "property manager" OR landlord cleanout OR junk Cincinnati OR Dayton',
 ];
 
-// ─── WATCHDOG-specific business signals (stricter — must be a NEED, not an ad) ─
+// ─── WATCHDOG-specific customer signals (must be a NEED or a professional profile) ─
 const WATCHDOG_CUSTOMER_SIGNALS = [
   'need', 'looking for', 'anyone', 'recommend', 'help', 'want', 'hire',
   'tenant left', 'tenant moved', 'eviction', 'foreclosure', 'estate',
@@ -165,6 +177,11 @@ const WATCHDOG_CUSTOMER_SIGNALS = [
   'leftovers', 'what\'s left', 'inherited', 'probate', 'deceased',
   'trashed', 'destroyed', 'abandoned', 'moved out', 'move out',
   'flip', 'rehab', 'fixer upper', 'renovation',
+  // LinkedIn profile signals (the person IS the lead — they're a realtor/PM/etc.)
+  'realtor', 'real estate agent', 'real estate', 'property manager',
+  'property management', 'broker', 'listing agent', 'estate liquidat',
+  'estate sale', 'probate attorney', 'probate lawyer',
+  'house flipper', 'real estate investor', 'landlord',
 ];
 
 // ─── Serper.dev Google Search ────────────────────────────────────────────────
@@ -216,6 +233,7 @@ const BUSINESS_SIGNALS = [
   // Corporate language
   'our team', 'we offer', 'we provide', 'our services', 'our company',
   'licensed and insured', 'fully licensed', 'fully insured',
+  'a901 licensed', 'usdot',
   'family owned', 'locally owned', 'family-owned', 'locally-owned',
   'veteran owned', 'woman owned', 'black owned',
   'serving the greater', 'serving cincinnati', 'serving dayton', 'serving the tri',
@@ -230,6 +248,17 @@ const BUSINESS_SIGNALS = [
   'top rated', 'top 10 best', '5 star', 'five star', '4.9', '4.8',
   'eco-friendly', 'eco friendly', 'customer centric',
   'skip to content', 'view schedule',
+
+  // Business names / branded posts (company advertising)
+  'junkremoval.com', 'junk removal llc', 'hauling llc', 'removal llc',
+  'your estate cleanout specialists', 'your junk removal', 'your hauling',
+  'one call does it all', 'does it all', 'all your junk',
+  'residential and commercial', 'commercial and residential',
+  'apartments/condos', 'condos/townhomes',
+  'hot tub removal', 'hot tubs', 'shed removals',
+
+  // Phone number in title/ad = business promoting themselves
+  'call shamrock', 'call junk', 'call 1-800', 'call 800',
 
   // Independent contractors advertising in Facebook groups
   'does anyone need junk', 'does anyone need removal', 'anyone need junk',
@@ -277,6 +306,17 @@ const BUSINESS_SIGNALS = [
   'trailer for rent', 'trailer rental', 'utility trailer',
 ];
 
+// ─── REGEX patterns for business detection (catches phone-in-title ads) ─────
+const BUSINESS_REGEX_PATTERNS = [
+  /call\s+\w+\s+\d{3}[-.]?\d{3}[-.]?\d{4}/i,        // "Call Shamrock 973-343-6017"
+  /\d{3}[-.]?\d{3}[-.]?\d{4}.*(?:removal|hauling|junk|cleanout)/i, // phone followed by service word
+  /(?:removal|hauling|junk|cleanout).*\d{3}[-.]?\d{3}[-.]?\d{4}/i, // service word followed by phone
+  /\w+(?:junk|removal|hauling|haul)\w*\.com/i,        // "shamrockjunkremoval.com"
+  /www\.\w+\.com/i,                                    // any www.xxx.com = business
+  /(?:llc|inc|ltd|corp)(?:\s|$|\.)/i,                 // LLC, Inc, Ltd, Corp
+  /(?:owned and operated|veteran[- ]owned)/i,          // "Veteran Owned and Operated"
+];
+
 // ─── CUSTOMER NEED signals — at least one must match ─────────────────────────
 const CUSTOMER_SIGNALS = [
   'need', 'looking for', 'anyone', 'recommend', 'help', 'want', 'hire',
@@ -291,6 +331,11 @@ const CUSTOMER_SIGNALS = [
 // ─── ALLOWED PLATFORMS — only these domains can produce leads ────────────────
 const ALLOWED_PLATFORMS = [
   'facebook.com', 'reddit.com', 'craigslist.org', 'nextdoor.com',
+];
+
+// Watchdog gets LinkedIn too (for finding realtors/professionals directly)
+const WATCHDOG_ALLOWED_PLATFORMS = [
+  'facebook.com', 'reddit.com', 'craigslist.org', 'nextdoor.com', 'linkedin.com',
 ];
 
 // ─── Extract a lead from a search result ─────────────────────────────────────
@@ -308,6 +353,9 @@ function extractLead(result) {
 
   // 2. Block if ANY business signal matches (aggressive — zero tolerance)
   if (BUSINESS_SIGNALS.some(sig => text.includes(sig))) return null;
+
+  // 2b. Block if any regex business pattern matches (phone-in-title ads, .com domains)
+  if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(text))) return null;
 
   // 3. Must contain at least one customer-need signal
   if (!CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
@@ -357,14 +405,17 @@ function extractWatchdogLead(result) {
   const title = result.title || '';
   const snippet = result.content || '';
 
-  // 0. Must be from allowed platform
-  if (!ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p))) return null;
+  // 0. Must be from allowed platform (includes LinkedIn for watchdog)
+  if (!WATCHDOG_ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p))) return null;
 
   // 1. Block known business/directory domains
   if (BLOCKED_DOMAINS.some(d => url.toLowerCase().includes(d))) return null;
 
   // 2. Block business ads (same filter)
   if (BUSINESS_SIGNALS.some(sig => text.includes(sig))) return null;
+
+  // 2b. Block regex business patterns
+  if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(text))) return null;
 
   // 3. Must contain at least one watchdog customer signal
   if (!WATCHDOG_CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
@@ -385,25 +436,34 @@ function extractWatchdogLead(result) {
 
   // Platform label
   let platform = 'Google';
-  if (url.includes('facebook'))  platform = 'Facebook';
+  if (url.includes('facebook'))       platform = 'Facebook';
   else if (url.includes('reddit'))    platform = 'Reddit';
   else if (url.includes('craigslist')) platform = 'Craigslist';
   else if (url.includes('nextdoor'))  platform = 'Nextdoor';
+  else if (url.includes('linkedin'))  platform = 'LinkedIn';
 
   // Detect the professional type
   let professionalType = 'Professional';
-  if (text.includes('realtor') || text.includes('real estate agent') || text.includes('listing'))
+  if (text.includes('realtor') || text.includes('real estate agent') || text.includes('real estate') || text.includes('listing agent') || text.includes('broker'))
     professionalType = 'Realtor/Agent';
-  else if (text.includes('landlord') || text.includes('property manager') || text.includes('tenant'))
+  else if (text.includes('landlord') || text.includes('property manager') || text.includes('property management') || text.includes('tenant'))
     professionalType = 'Landlord/PM';
-  else if (text.includes('estate sale') || text.includes('probate') || text.includes('deceased') || text.includes('inherited'))
+  else if (text.includes('estate sale') || text.includes('estate liquidat') || text.includes('probate') || text.includes('deceased') || text.includes('inherited'))
     professionalType = 'Estate/Probate';
-  else if (text.includes('flip') || text.includes('rehab') || text.includes('fixer'))
+  else if (text.includes('flip') || text.includes('rehab') || text.includes('fixer') || text.includes('investor'))
     professionalType = 'House Flipper';
+
+  // For LinkedIn profiles, try to extract the person's name from the title
+  let displayName = professionalType;
+  if (url.includes('linkedin.com/in/')) {
+    // LinkedIn titles are usually "FirstName LastName - Title | LinkedIn"
+    const nameMatch = title.match(/^([^-|]+)/);
+    if (nameMatch) displayName = nameMatch[1].trim();
+  }
 
   return {
     _key:            key,
-    name:            professionalType,
+    name:            displayName,
     description:     snippet.substring(0, 200),
     address:         location,
     phone:           phone || '',
@@ -534,11 +594,15 @@ function reclassifyTemperatures() {
   io.emit('leadsUpdated', leadsData);
 }
 
-// ─── Auto-scan 2x daily (8am + 6pm) — both scanners ────────────────────────
-cron.schedule('0 8,18 * * *', () => {
-  console.log('Cron-triggered scan (both agents)');
+// ─── Auto-scan every 30 min (6am–11pm) — catch leads FAST ──────────────────
+// Lead Scanner runs at :00, Watchdog runs at :15 (staggered to spread API usage)
+cron.schedule('0,30 6-23 * * *', () => {
+  console.log('Cron: Lead Scanner triggered');
   runScan().catch(console.error);
-  setTimeout(() => runWatchdogScan().catch(console.error), 60000); // stagger by 1 min
+});
+cron.schedule('15,45 6-23 * * *', () => {
+  console.log('Cron: Network Watchdog triggered');
+  runWatchdogScan().catch(console.error);
 });
 
 // Reclassify temperatures every hour
@@ -618,7 +682,7 @@ server.listen(PORT, () => {
   console.log(`  Serper: ${SERPER_API_KEY ? 'configured' : 'MISSING - set SERPER_API_KEY'}`);
   console.log(`  Resend: ${RESEND_API_KEY ? 'configured' : 'not set - emails disabled'}`);
   console.log(`  Lead queries: ${SEARCH_QUERIES.length} | Watchdog queries: ${WATCHDOG_QUERIES.length}`);
-  console.log(`  Auto-scan: 8am + 6pm daily (both agents)`);
+  console.log(`  Auto-scan: every 30 min (6am-11pm) — Lead Scanner at :00/:30, Watchdog at :15/:45`);
 
   if (SERPER_API_KEY) {
     setTimeout(() => runScan().catch(console.error), 5000);
