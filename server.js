@@ -197,6 +197,16 @@ const BUSINESS_SIGNALS = [
   'booking now', 'spots available', 'slots available', 'openings available',
   'starting at $', 'prices start', 'as low as $',
   'mention this post', 'use code', 'discount', '% off',
+
+  // Contractor "I'm available" posts
+  'truck and trailer available', 'trailer available', 'truck available',
+  'available all evening', 'available all day', 'available now',
+  'available today', 'available this week', 'available tomorrow',
+  'for hire', 'for any moving', 'for any hauling',
+  'award winning', 'don\'t strike out',
+  'free estimate', 'before & after', 'before &amp; after',
+  'serving greater', 'serving the',
+  'trailer for rent', 'trailer rental', 'utility trailer',
 ];
 
 // ─── CUSTOMER NEED signals — at least one must match ─────────────────────────
