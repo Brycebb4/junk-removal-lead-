@@ -2,58 +2,101 @@
 <html lang="en">
 <head>
     <meta name="description" content="Fast, affordable junk removal in Cincinnati, Dayton, Northern Kentucky & Indiana. Same-day service for furniture, appliances, hot tubs, cleanouts & more. Free estimates!">
-<title>Junk Removal Cincinnati | Fast Hauling - Junk Removal Guys</title>  <!-- already good, keep it -->
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://ohio-junk-scan.lovable.app/">
+    <title>Junk Removal Cincinnati | Fast Hauling - Junk Removal Guys</title>
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://junk-removal-lead-2.onrender.com/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-    
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); min-height: 100vh; padding: 20px; color: #333; }
-        .container { max-width: 1400px; margin: 0 auto; }
+        .container { max-width: 1000px; margin: 0 auto; }
         .header { text-align: center; color: white; margin-bottom: 30px; }
         .header h1 { font-size: 2.5em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); }
-        .dashboard-summary { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px; }
-        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .header p { margin-top: 10px; opacity: 0.9; font-size: 0.95em; line-height: 1.5; }
+
+        .summary { background: white; border-radius: 15px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; }
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
         .summary-card { text-align: center; padding: 20px; border-radius: 10px; color: white; }
         .summary-value { font-size: 2.5em; font-weight: 700; }
-        .agents-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px; }
-        .agent-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        .agent-header { display: flex; align-items: center; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
-        .agent-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; margin-right: 15px; background: #f0f0f0; }
-        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-        .metric { text-align: center; padding: 10px; background: #f8f9fa; border-radius: 8px; }
+
+        .agent-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; }
+        .agent-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f0f0; }
+        .agent-title { display: flex; align-items: center; gap: 15px; }
+        .agent-icon { width: 50px; height: 50px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: linear-gradient(135deg, #28a745, #20c997); }
+        .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 15px; }
+        .metric { text-align: center; padding: 12px; background: #f8f9fa; border-radius: 8px; }
         .metric-value { font-size: 1.5em; font-weight: 700; color: #2c3e50; }
-        .btn { padding: 14px; background: #3498db; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 10px; }
-        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #3498db; border-radius: 8px; cursor: pointer; }
+
+        .btn-scan { padding: 14px; background: linear-gradient(135deg, #28a745, #20c997); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 1em; }
+        .btn-scan:hover { opacity: 0.9; }
+        .btn-clear { padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin-top: 15px; }
+        .scan-status { font-size: 0.85em; margin-top: 10px; font-weight: 600; }
+
+        .leads-list { margin-top: 15px; max-height: 600px; overflow-y: auto; }
+        .lead-item { background: #f8f9fa; padding: 12px; margin-bottom: 8px; border-left: 4px solid #28a745; border-radius: 8px; cursor: pointer; }
         .lead-item:hover { background: #e3f2fd; }
+        .lead-item.hot { border-left-color: #e74c3c; }
         .lead-contact { font-size: 0.85em; color: #28a745; margin-top: 4px; }
+        .lead-platform { display: inline-block; font-size: 0.75em; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #1976d2; margin-left: 8px; }
+        .no-leads { color: #999; font-style: italic; padding: 20px; text-align: center; }
+
+        .manual-form { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; }
+        .manual-form h3 { margin-bottom: 15px; color: #2c3e50; }
+        .manual-form input, .manual-form textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
+        .manual-form button { padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: white; max-width: 600px; width: 90%; border-radius: 15px; padding: 25px; max-height: 90vh; overflow-y: auto; }
-        .no-leads { color: #999; font-style: italic; padding: 15px; text-align: center; }
-        .scan-status { font-size: 0.85em; margin-top: 8px; font-weight: 600; }
-        
-        /* Manual form styles */
-        .template-tools { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 25px; }
-        .template-tools h3 { margin-bottom: 15px; color: #2c3e50; }
-        .template-tools input, .template-tools textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; }
-        .template-tools button { padding: 14px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; }
+        .modal-content h2 { margin-bottom: 15px; }
+        .modal-content p { margin-bottom: 8px; }
+        .modal-actions { margin-top: 15px; }
+        .modal-actions button { padding: 14px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; margin-bottom: 8px; color: white; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>Junk Removal Lead Generator</h1>
-            <p>Scanning Live Sources: Craigslist, Reddit, Facebook, Nextdoor, OfferUp, Letgo, Real Estate & More (Dayton • Cincinnati • Northern Kentucky • Southern Indiana • Florence • Erlanger • Covington • Newport • Bullittsville • Hebron • Lawrenceburg • Greendale • Petersburg • Idlewild • Shawnee • Addyston • Wilder • Cold Spring • Silver Grove • Melbourne • Alexandria • Fort Thomas • Southgate • Independence & surrounding rural areas)</p>
-            <button onclick="clearAllLeads()" style="margin-top:15px;padding:12px 24px;background:#e74c3c;color:white;border:none;border-radius:8px;font-weight:600;cursor:pointer;">Clear All Leads (Fresh Start)</button>
+            <h1>Junk Removal Lead Scanner</h1>
+            <p>Scanning Google, Facebook, Reddit, Craigslist & Nextdoor for real customers looking for junk removal, hauling, moving help & property cleanouts across Cincinnati, Dayton, Northern Kentucky, Southern Indiana & 40+ surrounding cities.</p>
+            <button class="btn-clear" onclick="clearAllLeads()">Clear All Leads (Fresh Start)</button>
         </div>
 
-        <!-- MANUAL LEAD ENTRY FORM -->
-        <div class="template-tools">
-            <h3>🎯 Specific Lead Entry (Facebook / Nextdoor / Phone calls)</h3>
+        <!-- SUMMARY -->
+        <div class="summary">
+            <div class="summary-grid">
+                <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div>Total Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div>Hot Leads</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="scanCount">0</div><div>Scans Run</div></div>
+                <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="platforms">0</div><div>Platforms</div></div>
+            </div>
+        </div>
+
+        <!-- SINGLE AGENT CARD -->
+        <div class="agent-card">
+            <div class="agent-header">
+                <div class="agent-title">
+                    <div class="agent-icon">🔍</div>
+                    <div>
+                        <h2>Lead Scanner</h2>
+                        <span style="background:#d4edda;color:#155724;padding:4px 12px;border-radius:20px;font-size:0.8em;">Active</span>
+                    </div>
+                </div>
+            </div>
+            <div class="metrics">
+                <div class="metric"><div class="metric-value" id="agentScans">0</div><div>Scans</div></div>
+                <div class="metric"><div class="metric-value" id="agentLeads">0</div><div>Leads</div></div>
+                <div class="metric"><div class="metric-value" id="agentHot">0</div><div>Hot</div></div>
+            </div>
+            <button class="btn-scan" onclick="runScan()">Scan Now</button>
+            <div class="scan-status" id="scanStatus">Last scanned: Never</div>
+            <div class="leads-list" id="leadsList"></div>
+        </div>
+
+        <!-- MANUAL ENTRY -->
+        <div class="manual-form">
+            <h3>+ Add Lead Manually</h3>
             <form id="manualForm">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
                     <input type="text" name="name" placeholder="Name (or Anonymous)" required>
@@ -63,270 +106,202 @@
                 </div>
                 <textarea name="description" placeholder="Description (e.g. 'Moving out - full garage cleanout')" rows="3"></textarea>
                 <input type="text" name="source" placeholder="Source URL or how you got the lead">
-                <label style="margin-top:10px;display:block;">
-                    <input type="checkbox" name="hot"> Hot Lead (has phone or email)
-                </label>
+                <label style="margin-top:10px;display:block;"><input type="checkbox" name="hot"> Hot Lead (has phone or email)</label>
                 <button type="submit">Add Lead Now</button>
             </form>
         </div>
-
-        <div class="dashboard-summary">
-            <div class="summary-grid">
-                <div class="summary-card" style="background: linear-gradient(135deg,#667eea,#764ba2);"><div class="summary-value" id="totalLeads">0</div><div>Total Leads Today</div></div>
-                <div class="summary-card" style="background: linear-gradient(135deg,#f093fb,#f5576c);"><div class="summary-value" id="hotLeads">0</div><div>Hot Leads</div></div>
-                <div class="summary-card" style="background: linear-gradient(135deg,#4facfe,#00f2fe);"><div class="summary-value" id="activeAgents">6</div><div>Active Agents</div></div>
-                <div class="summary-card" style="background: linear-gradient(135deg,#43e97b,#38f9d7);"><div class="summary-value" id="conversionRate">19%</div><div>Est. Conversion</div></div>
-            </div>
-        </div>
-        <div class="agents-grid" id="agentsGrid"></div>
     </div>
 
     <!-- LEAD MODAL -->
     <div class="modal-overlay" id="leadModal">
         <div class="modal-content">
-            <h2 id="modalName">Homeowner Name</h2>
+            <h2 id="modalName">Lead Details</h2>
             <p><strong>Description:</strong> <span id="modalDesc"></span></p>
             <p><strong>Address:</strong> <span id="modalAddress"></span></p>
-            <p><strong>📞 Phone:</strong> <a id="modalPhone" href="#" style="color:#28a745;font-weight:600;">Call Now</a></p>
-            <p><strong>✉️ Email:</strong> <a id="modalEmail" href="#" style="color:#3498db;font-weight:600;">Email Now</a></p>
-            <p><strong>🔗 Original Post:</strong> <a id="modalSourceLink" href="#" target="_blank" style="color:#e74c3c;font-weight:600;">Open Craigslist/Facebook Post →</a></p>
-            <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;color:#28a745;">🔥 Hot Lead</span></p>
-            
-            <div class="template-tools">
-                <h4>🚀 One-Click Professional Messages</h4>
-                <button onclick="textLead()" style="padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">💬 Send Text Message (Template)</button>
-                <button onclick="emailLead()" style="padding:14px;background:#3498db;color:white;border:none;border-radius:8px;font-weight:600;width:100%;margin-bottom:8px;">✉️ Send Professional Email (Template)</button>
-                <button onclick="copyCallTextScript()" style="padding:14px;background:#f39c12;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">📋 Copy Call/Text Script (Phone or SMS)</button>
+            <p><strong>Phone:</strong> <a id="modalPhone" href="#" style="color:#28a745;font-weight:600;">—</a></p>
+            <p><strong>Email:</strong> <a id="modalEmail" href="#" style="color:#3498db;font-weight:600;">—</a></p>
+            <p><strong>Source:</strong> <a id="modalSource" href="#" target="_blank" style="color:#e74c3c;font-weight:600;">View Original Post</a></p>
+            <p><strong>Status:</strong> <span id="modalStatus" style="font-weight:600;">—</span></p>
+            <div class="modal-actions">
+                <button onclick="textLead()" style="background:#28a745;">Send Text Message (Template)</button>
+                <button onclick="emailLead()" style="background:#3498db;">Send Professional Email (Template)</button>
+                <button onclick="copyScript()" style="background:#f39c12;">Copy Call/Text Script</button>
+                <button id="contactBtn" style="background:#28a745;">Mark as Contacted + Remove</button>
+                <button onclick="closeModal()" style="background:#dc3545;">Close</button>
             </div>
-            
-            <button id="contactBtn" style="margin:15px 0;padding:14px;background:#28a745;color:white;border:none;border-radius:8px;font-weight:600;width:100%;">✅ Mark as Contacted + Remove</button>
-            <button onclick="closeModal()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:8px;width:100%;">Close Window</button>
         </div>
     </div>
 
-    <!-- SOCKET.IO + MAIN SCRIPT -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
-        let agents = {
-            realEstate: { name: "Real Estate Monitor", icon: "🏠", scans: 0, leadsList: [] },
-            socialMedia: { name: "Social Media Scanner", icon: "📱", scans: 0, leadsList: [] },
-            marketplace: { name: "Marketplace Hunter", icon: "🛒", scans: 0, leadsList: [] },
-            eventSeason: { name: "Event & Seasonal Tracker", icon: "📅", scans: 0, leadsList: [] },
-            craigslist: { name: "Craigslist Scanner", icon: "📰", scans: 0, leadsList: [] },
-            manual: { name: "Specific Lead Generator", icon: "🎯", scans: 0, leadsList: [] }
-        };
-
+        let scans = 0;
+        let allLeads = [];
+        let manualLeads = [];
         let currentLead = null;
-        let currentKey = null;
 
-        const COMPANY_NAME = "Junk Removal Guys";
-        const COMPANY_PHONE = "(513) 555-1234";
-        const AGENT_NAME = "the Junk Removal Guys team";
+        const COMPANY = "Junk Removal Guys";
+        const PHONE = "(513) 555-1234";
+        const TEAM = "the Junk Removal Guys team";
 
-        const CALL_TEXT_TEMPLATE = `Hi {Name}, this is ${AGENT_NAME} with ${COMPANY_NAME}. I saw your post about needing {Description} at {Address}.\n\nWe specialize in fast clean-outs with same-day service and competitive pricing.\n\nWould you like a free no-obligation quote today? I can swing by or give you exact pricing over the phone right now. Just reply here or call me back at ${COMPANY_PHONE}.\n\nLooking forward to helping you get it cleared out quickly!`;
+        const TEXT_TEMPLATE = `Hi {Name}, this is ${TEAM} with ${COMPANY}. I saw your post about needing {Description} at {Address}.\n\nWe specialize in fast clean-outs with same-day service and competitive pricing.\n\nWould you like a free no-obligation quote today? Just reply here or call me at ${PHONE}.\n\nLooking forward to helping!`;
+        const EMAIL_BODY = `Hi {Name},\n\nI'm ${TEAM} with ${COMPANY}. I came across your listing about needing {Description} at {Address}.\n\nWe handle full clean-outs, furniture, appliances, yard waste - everything. Same-day service, transparent pricing, no hidden fees.\n\nWould you like a free on-site quote? Reply or call/text ${PHONE}.\n\nBest,\n${TEAM}\n${COMPANY}\n${PHONE}\njunkremovalguys394@gmail.com`;
 
-        const EMAIL_TEMPLATE = `Hi {Name},\n\nI'm ${AGENT_NAME} with ${COMPANY_NAME}. I came across your listing about needing {Description} at {Address}.\n\nWe handle full clean-outs, furniture, appliances, yard waste — everything. Same-day service is usually available, and our pricing is transparent with no hidden fees.\n\nWould you like a free on-site quote? I can text you a couple of quick options or schedule a 10-minute visit today.\n\nJust reply to this email or call/text me directly at ${COMPANY_PHONE}.\n\nThanks for your time — happy to help you get the property ready!\n\nBest,  \n${AGENT_NAME}\n${COMPANY_NAME}\n${COMPANY_PHONE}\njunkremovalguys394@gmail.com\nhttps://ohio-junk-scan.lovable.app`;
-
-        function loadData() {
-            const saved = localStorage.getItem('junkLeadsData');
+        function loadLocal() {
+            const saved = localStorage.getItem('junkScanner');
             if (saved) {
-                const parsed = JSON.parse(saved);
-                // Only restore scans and leadsList — always use the latest agent names/icons from code
-                Object.keys(agents).forEach(k => {
-                    if (parsed[k]) {
-                        agents[k].scans = parsed[k].scans || 0;
-                        agents[k].leadsList = parsed[k].leadsList || [];
-                    }
-                });
+                const d = JSON.parse(saved);
+                scans = d.scans || 0;
             }
         }
-        function saveData() {
-            localStorage.setItem('junkLeadsData', JSON.stringify(agents));
+        function saveLocal() {
+            localStorage.setItem('junkScanner', JSON.stringify({ scans }));
         }
 
         async function clearAllLeads() {
-            if (confirm('Clear EVERYTHING (leads + scan counts)?')) {
+            if (confirm('Clear ALL leads and reset scan count?')) {
                 await fetch('/api/leads', { method: 'DELETE' });
-                // Reset all scan counts and leads locally
-                Object.keys(agents).forEach(k => {
-                    agents[k].scans = 0;
-                    agents[k].leadsList = [];
-                });
-                localStorage.removeItem('junkLeadsData');
+                scans = 0;
+                localStorage.removeItem('junkScanner');
                 location.reload();
             }
         }
 
-        function renderAgents() {
-            const grid = document.getElementById('agentsGrid');
-            grid.innerHTML = '';
-            Object.keys(agents).forEach(key => {
-                const a = agents[key];
-                const card = document.createElement('div');
-                card.className = 'agent-card';
-                card.innerHTML = `
-                    <div class="agent-header">
-                        <div class="agent-icon">${a.icon}</div>
-                        <div><h3>${a.name}</h3><span style="background:#d4edda;color:#155724;padding:5px 12px;border-radius:20px;font-size:0.8em;">Active</span></div>
-                    </div>
-                    <div class="metrics">
-                        <div class="metric"><div class="metric-value">${a.scans}</div><div>Scans</div></div>
-                        <div class="metric"><div class="metric-value">${a.leadsList.length}</div><div>Leads</div></div>
-                        <div class="metric"><div class="metric-value">${a.leadsList.filter(l=>l.hot).length}</div><div>Hot</div></div>
-                    </div>
-                    <button class="btn" onclick="scanAgent('${key}')">Scan Now</button>
-                    <div class="scan-status" id="${key}-status">Last scanned: Never</div>
-                    <div class="leads-section" id="${key}-leads-section"></div>
-                `;
-                grid.appendChild(card);
-                renderLeadsForAgent(key);
-            });
-            updateGlobalSummary();
-        }
+        function render() {
+            const combined = [...allLeads, ...manualLeads];
+            const hot = combined.filter(l => l.hot);
+            const platforms = new Set(combined.map(l => l.platform)).size;
 
-        function renderLeadsForAgent(key) {
-            const section = document.getElementById(`${key}-leads-section`);
-            section.innerHTML = '<h4 style="margin:10px 0 5px;color:#555;">Latest Leads:</h4>';
-            if (agents[key].leadsList.length === 0) {
-                section.innerHTML += '<p class="no-leads">No leads yet. Click Scan Now!</p>';
+            document.getElementById('totalLeads').textContent = combined.length;
+            document.getElementById('hotLeads').textContent = hot.length;
+            document.getElementById('scanCount').textContent = scans;
+            document.getElementById('platforms').textContent = platforms;
+            document.getElementById('agentScans').textContent = scans;
+            document.getElementById('agentLeads').textContent = combined.length;
+            document.getElementById('agentHot').textContent = hot.length;
+
+            const list = document.getElementById('leadsList');
+            list.innerHTML = '';
+            if (combined.length === 0) {
+                list.innerHTML = '<p class="no-leads">No leads yet. Click Scan Now!</p>';
                 return;
             }
-            agents[key].leadsList.forEach(lead => {
+            combined.forEach(lead => {
                 const div = document.createElement('div');
-                div.className = 'lead-item';
-                div.innerHTML = `🔥 <strong>${lead.name || 'Homeowner'}</strong> – ${lead.description ? lead.description.substring(0,60)+'...' : 'Junk removal needed'}<div class="lead-contact">📞 ${lead.phone || '—'} &nbsp;&nbsp; ✉️ ${lead.email || '—'}</div>`;
-                div.onclick = () => showLeadModal(lead, key);
-                section.appendChild(div);
+                div.className = `lead-item${lead.hot ? ' hot' : ''}`;
+                div.innerHTML = `
+                    ${lead.hot ? '🔥' : '📋'} <strong>${lead.name || 'Potential Customer'}</strong>
+                    <span class="lead-platform">${lead.platform || 'Web'}</span>
+                    <br/><span style="color:#555;">${(lead.description || lead.title || 'Junk removal needed').substring(0, 80)}...</span>
+                    <div class="lead-contact">
+                        ${lead.phone ? '📞 ' + lead.phone : ''} ${lead.phone && lead.email ? '|' : ''} ${lead.email ? '✉️ ' + lead.email : ''}
+                        ${!lead.phone && !lead.email ? '📍 ' + (lead.address || '') : ''}
+                    </div>`;
+                div.onclick = () => showModal(lead);
+                list.appendChild(div);
             });
         }
 
-        function showLeadModal(lead, key) {
+        function showModal(lead) {
             currentLead = lead;
-            currentKey = key;
-            document.getElementById('modalName').textContent = lead.name || 'Homeowner';
-            document.getElementById('modalDesc').textContent = lead.description || '';
+            document.getElementById('modalName').textContent = lead.name || 'Potential Customer';
+            document.getElementById('modalDesc').textContent = lead.description || lead.title || '';
             document.getElementById('modalAddress').textContent = lead.address || '';
-            const phoneEl = document.getElementById('modalPhone');
-            phoneEl.textContent = lead.phone || 'No phone';
-            phoneEl.href = lead.phone ? `tel:${lead.phone}` : '#';
-            const emailEl = document.getElementById('modalEmail');
-            emailEl.textContent = lead.email || 'No email';
-            emailEl.href = lead.email ? `mailto:${lead.email}` : '#';
-            document.getElementById('modalSourceLink').href = lead.source || '#';
-            const statusEl = document.getElementById('modalStatus');
-            statusEl.textContent = lead.hot ? '🔥 Hot Lead' : 'Warm Lead';
-            statusEl.style.color = lead.hot ? '#28a745' : '#f39c12';
+            const ph = document.getElementById('modalPhone');
+            ph.textContent = lead.phone || 'No phone';
+            ph.href = lead.phone ? `tel:${lead.phone}` : '#';
+            const em = document.getElementById('modalEmail');
+            em.textContent = lead.email || 'No email';
+            em.href = lead.email ? `mailto:${lead.email}` : '#';
+            document.getElementById('modalSource').href = lead.source || '#';
+            const st = document.getElementById('modalStatus');
+            st.textContent = lead.hot ? '🔥 Hot Lead' : 'Warm Lead';
+            st.style.color = lead.hot ? '#28a745' : '#f39c12';
             document.getElementById('contactBtn').onclick = () => {
                 if (confirm('Mark as contacted and remove?')) {
-                    agents[key].leadsList = agents[key].leadsList.filter(l => l !== lead);
-                    saveData();
-                    renderAgents();
+                    fetch(`/api/leads/${encodeURIComponent(lead._key)}`, { method: 'DELETE' });
+                    allLeads = allLeads.filter(l => l._key !== lead._key);
+                    manualLeads = manualLeads.filter(l => l._key !== lead._key);
+                    render();
                     closeModal();
                 }
             };
             document.getElementById('leadModal').classList.add('active');
         }
-
-        function closeModal() {
-            document.getElementById('leadModal').classList.remove('active');
-        }
+        function closeModal() { document.getElementById('leadModal').classList.remove('active'); }
 
         function textLead() {
-            if (!currentLead?.phone) return alert("No phone");
-            const msg = CALL_TEXT_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
+            if (!currentLead?.phone) return alert("No phone number");
+            const msg = TEXT_TEMPLATE.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
             window.location.href = `sms:${currentLead.phone}?body=${encodeURIComponent(msg)}`;
         }
         function emailLead() {
             if (!currentLead?.email) return alert("No email");
-            const body = EMAIL_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
+            const body = EMAIL_BODY.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
             window.open(`mailto:${currentLead.email}?subject=${encodeURIComponent(`Free Junk Removal Quote - ${currentLead.address}`)}&body=${encodeURIComponent(body)}`, '_blank');
         }
-        function copyCallTextScript() {
+        function copyScript() {
             if (!currentLead) return;
-            const script = CALL_TEXT_TEMPLATE.replace("{Name}", currentLead.name||"").replace("{Description}", currentLead.description||"").replace("{Address}", currentLead.address||"");
-            navigator.clipboard.writeText(script).then(() => alert("✅ Script copied!"));
+            const script = TEXT_TEMPLATE.replace("{Name}", currentLead.name || "").replace("{Description}", currentLead.description || "").replace("{Address}", currentLead.address || "");
+            navigator.clipboard.writeText(script).then(() => alert("Script copied!"));
         }
 
-        async function scanAgent(key) {
-            const statusEl = document.getElementById(`${key}-status`);
-            statusEl.textContent = "Scanning live sources...";
-            statusEl.style.color = "#f39c12";
-
+        async function runScan() {
+            const status = document.getElementById('scanStatus');
+            status.textContent = "Scanning Google, Facebook, Reddit, Craigslist...";
+            status.style.color = "#f39c12";
             try {
-                await fetch('/trigger-all');
+                const scanRes = await fetch('/trigger-all');
+                const scanData = await scanRes.json();
                 const res = await fetch('/api/leads');
-                const backendData = await res.json();
-                
-                Object.keys(agents).forEach(k => {
-                    if (backendData[k]) {
-                        agents[k].leadsList = backendData[k];
-                    }
-                });
-                agents[key].scans++;
-                saveData();
-                renderAgents();
-                statusEl.textContent = `Last scanned: ${new Date().toLocaleTimeString()}`;
-                statusEl.style.color = "#28a745";
-            } catch(e) {
-                statusEl.textContent = "Scan failed — check Render logs";
-                statusEl.style.color = "#e74c3c";
+                const data = await res.json();
+                allLeads = data.leads || [];
+                manualLeads = data.manual || [];
+                scans++;
+                saveLocal();
+                render();
+                status.textContent = `Last scanned: ${new Date().toLocaleTimeString()} — ${scanData.totalNew || 0} new leads found`;
+                status.style.color = "#28a745";
+            } catch (e) {
+                status.textContent = "Scan failed - check logs";
+                status.style.color = "#e74c3c";
                 console.error(e);
             }
         }
 
-        function updateGlobalSummary() {
-            let total = 0, hot = 0;
-            Object.values(agents).forEach(a => { 
-                total += a.leadsList.length; 
-                hot += a.leadsList.filter(l => l.hot).length; 
-            });
-            document.getElementById('totalLeads').textContent = total;
-            document.getElementById('hotLeads').textContent = hot;
-            document.getElementById('activeAgents').textContent = Object.keys(agents).length;
-        }
-
-        // MANUAL FORM
+        // Manual form
         document.getElementById('manualForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
+            const data = Object.fromEntries(new FormData(e.target));
             data.hot = data.hot === 'on';
-            
-            await fetch('/api/add-lead', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            
-            alert('✅ Lead saved!');
+            await fetch('/api/add-lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            alert('Lead saved!');
             e.target.reset();
             const res = await fetch('/api/leads');
             const backendData = await res.json();
-            Object.keys(agents).forEach(k => { if (backendData[k]) agents[k].leadsList = backendData[k]; });
-            renderAgents();
+            allLeads = backendData.leads || [];
+            manualLeads = backendData.manual || [];
+            render();
         });
 
-        // REAL-TIME UPDATES FROM SERVER
+        // Real-time updates
         socket.on('leadsUpdated', (data) => {
-            Object.keys(agents).forEach(k => {
-                if (data[k]) agents[k].leadsList = data[k];
-            });
-            renderAgents();
+            allLeads = data.leads || [];
+            manualLeads = data.manual || [];
+            render();
         });
 
-        // INIT
+        // Init
         async function init() {
-            loadData();
+            loadLocal();
             try {
                 const res = await fetch('/api/leads');
-                const backendData = await res.json();
-                Object.keys(agents).forEach(k => { if (backendData[k]) agents[k].leadsList = backendData[k]; });
-            } catch(e) {}
-            renderAgents();
-            updateGlobalSummary();
+                const data = await res.json();
+                allLeads = data.leads || [];
+                manualLeads = data.manual || [];
+            } catch (e) {}
+            render();
         }
-
         init();
     </script>
 </body>
