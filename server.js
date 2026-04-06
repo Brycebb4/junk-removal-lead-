@@ -54,27 +54,29 @@ const LOCATIONS = [
   'Lexington', 'Northern Kentucky',
 ];
 
-// ─── Search queries — COMMUNITY PLATFORMS ONLY (no Google organic) ───────────
-// Only Facebook groups, Craigslist, Reddit, Nextdoor — where REAL customers post.
-// Kept to 8 high-yield queries to stay within Serper free-tier budget.
+// ─── Search queries — COMMUNITY PLATFORMS ONLY ───────────────────────────────
 const SEARCH_QUERIES = [
-  // Facebook Groups — direct junk removal / hauling asks
-  'site:facebook.com/groups "need junk removal" OR "need junk removed" OR "looking for junk removal" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
-  'site:facebook.com/groups "haul away" OR "need someone to haul" OR "clean out" Cincinnati OR Dayton OR Covington OR Florence',
-  'site:facebook.com/groups "getting rid of" OR "moving out" OR "need help moving" junk OR furniture OR stuff Cincinnati OR Dayton OR Ohio',
-  'site:facebook.com/groups "estate cleanout" OR "tenant left" OR "selling my house" OR "foreclosure" junk OR cleanout OR haul Cincinnati OR Dayton',
 
-  // Craigslist — customer requests
-  'site:craigslist.org "junk removal" OR "haul away" OR "clean out" OR "free pickup" Cincinnati OR Dayton OR Kentucky OR Lexington',
+  // === FACEBOOK GROUPS — direct junk/hauling customer asks ===
+  'site:facebook.com/groups "need junk removal" OR "need junk removed" OR "looking for junk removal" OR "recommend junk removal" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington OR Florence',
+  'site:facebook.com/groups "haul away" OR "haul off" OR "need someone to haul" OR "clean out" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
+  'site:facebook.com/groups "getting rid of" OR "free to haul" OR "free if you haul" furniture OR junk OR appliances OR mattress Cincinnati OR Dayton OR Ohio',
 
-  // Reddit — asking for recommendations
-  'site:reddit.com "junk removal" OR "haul away" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky" recommend OR need OR looking',
+  // === FACEBOOK CONTRACTOR GROUPS — demo & removal requests (like Michael Williams post) ===
+  // These groups are goldmines: homeowners/investors post asking for demo quotes
+  'site:facebook.com/groups "need a quote" OR "need someone to" OR "looking for someone to" demo OR demolition OR "remove cabinets" OR "haul debris" OR "clean up" Cincinnati OR Dayton OR "Northern Kentucky" OR Ohio',
+  'site:facebook.com/groups "demo work" OR "demolition work" OR "need demo" OR "gut the" OR "tear out" Cincinnati OR Dayton OR "Northern Kentucky" OR Ohio',
+  'site:facebook.com/groups "construction debris" OR "construction cleanup" OR "construction clean up" OR "renovation debris" Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "remove" "tub" OR "vanity" OR "cabinets" OR "flooring" OR "paneling" OR "drywall" Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // Nextdoor — neighborhood asks
-  'site:nextdoor.com "junk removal" OR "haul away" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky"',
+  // === CRAIGSLIST — customer requests ===
+  'site:craigslist.org "junk removal" OR "haul away" OR "demo" OR "clean out" OR "debris removal" Cincinnati OR Dayton OR Kentucky OR Lexington',
 
-  // Broad fallback across all platforms
-  '"need junk removal" OR "need junk removed" OR "haul away my" Cincinnati OR Dayton OR Covington OR Florence OR Lexington site:facebook.com OR site:reddit.com OR site:nextdoor.com OR site:craigslist.org',
+  // === REDDIT — asking for recommendations ===
+  'site:reddit.com "junk removal" OR "haul away" OR "demo" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky" recommend OR need OR looking',
+
+  // === NEXTDOOR — neighborhood asks ===
+  'site:nextdoor.com "junk removal" OR "haul away" OR "cleanout" OR "demo" Cincinnati OR Dayton OR "Northern Kentucky"',
 ];
 
 // ─── NETWORK WATCHDOG — track realtors, property managers, estate pros, etc. ─
@@ -97,41 +99,38 @@ const WATCHDOG_PROFILES = [
 ];
 
 // ─── NETWORK WATCHDOG QUERIES ────────────────────────────────────────────────
-// Goal: Find contractor/realtor PROFILES & PAGES — people to contact directly
-// for ongoing referral relationships, not one-off customer posts.
+// Goal 1: Realtors posting active listings → extract name & phone to contact directly
+// Goal 2: Contractor/investor profiles → build referral partnerships
 const WATCHDOG_QUERIES = [
 
-  // === REALTORS — Facebook profiles & pages in service area ===
-  'site:facebook.com realtor OR "real estate agent" OR "listing agent" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington OR Florence OR Lexington',
-  'site:facebook.com "RE/MAX" OR "Keller Williams" OR "Coldwell Banker" OR "eXp Realty" agent Cincinnati OR Dayton OR "Northern Kentucky"',
+  // === REALTORS — active listing posts on Facebook (name & phone usually in post) ===
+  'site:facebook.com/groups "just listed" OR "new listing" OR "for sale" realtor OR agent Cincinnati OR Dayton OR "Northern Kentucky" OR Covington OR Florence',
+  'site:facebook.com/groups "just listed" OR "new listing" bedrooms OR bath OR sqft Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
+  'site:facebook.com/groups "price reduced" OR "back on market" OR "open house" realtor OR agent Cincinnati OR Dayton OR Ohio',
 
-  // === PROPERTY MANAGERS & LANDLORDS — Facebook groups & pages ===
-  'site:facebook.com "property management" OR "property manager" OR landlord Cincinnati OR Dayton OR "Northern Kentucky" OR Florence OR Covington',
+  // === REALTORS — Facebook business pages & profiles ===
+  'site:facebook.com "RE/MAX" OR "Keller Williams" OR "Coldwell Banker" OR "eXp Realty" OR "Howard Hanna" realtor Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com realtor OR "real estate agent" OR "listing agent" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington OR Florence OR Lexington -groups',
 
-  // === GENERAL CONTRACTORS — remodelers, roofers, plumbers (always have demo debris) ===
-  'site:facebook.com "general contractor" OR "home remodeling" OR "kitchen remodel" OR "bathroom remodel" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com "roofing contractor" OR "roofing company" OR "roofer" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington',
-  'site:facebook.com/groups "general contractor" OR "contractor" demo OR demolition OR "clean up" OR debris Cincinnati OR Dayton OR Ohio',
+  // === PROPERTY MANAGERS & LANDLORDS ===
+  'site:facebook.com "property management" OR "property manager" Cincinnati OR Dayton OR "Northern Kentucky" OR Florence OR Covington',
+  'site:facebook.com/groups landlord OR "rental property" OR "property manager" "tenant" OR "turnover" OR "vacancy" Cincinnati OR Dayton OR Ohio',
 
-  // === ESTATE SALE COMPANIES — find the companies directly ===
-  'site:facebook.com "estate sale" OR "estate liquidation" OR "estate services" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
+  // === GENERAL CONTRACTORS posting their work (reach out to partner) ===
+  'site:facebook.com "general contractor" OR "home remodeling" OR "renovation" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington',
+  'site:facebook.com/groups "general contractor" OR "remodeling" OR "renovation" "completed" OR "finished" OR "before and after" Cincinnati OR Dayton OR Ohio',
 
-  // === HOUSE FLIPPERS & INVESTORS — active in the area ===
-  'site:facebook.com/groups "house flip" OR "wholesaler" OR "real estate investor" Cincinnati OR Dayton OR Ohio "looking for" OR "need" OR "want"',
+  // === ESTATE SALE COMPANIES — active sales ===
+  'site:facebook.com "estate sale" OR "estate liquidation" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington "upcoming" OR "this weekend" OR "Saturday" OR "Sunday"',
 
-  // === LINKEDIN — professional profiles to reach out to directly ===
+  // === HOUSE FLIPPERS posting rehab projects ===
+  'site:facebook.com/groups "house flip" OR "rehab" OR "fixer upper" OR "real estate investor" Cincinnati OR Dayton OR Ohio "before" OR "after" OR "just acquired" OR "closing"',
+
+  // === LINKEDIN — individual realtor & contractor profiles ===
   'site:linkedin.com/in realtor OR "real estate agent" OR "listing agent" Cincinnati OR Dayton OR "Northern Kentucky"',
   'site:linkedin.com/in "property manager" OR "property management" Cincinnati OR Dayton OR Ohio',
-  'site:linkedin.com/in "general contractor" OR "home remodeling" OR "construction" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:linkedin.com/in "estate sale" OR "estate liquidator" OR "probate" Cincinnati OR Dayton OR Ohio',
-  'site:linkedin.com/in "house flipper" OR "real estate investor" OR "wholesaler" Cincinnati OR Dayton OR Ohio',
-
-  // === NEXTDOOR — contractor & realtor business profiles ===
-  'site:nextdoor.com realtor OR "real estate" OR "property management" OR "general contractor" Cincinnati OR Dayton OR "Northern Kentucky"',
-
-  // === CRAIGSLIST — contractors posting their own services (reach out to partner) ===
-  'site:craigslist.org "general contractor" OR "remodeling" OR "renovation" Cincinnati OR Dayton OR Kentucky',
-  'site:craigslist.org realtor OR "property management" OR "estate sale" Cincinnati OR Dayton OR Lexington',
+  'site:linkedin.com/in "general contractor" OR "home remodeling" OR "construction manager" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:linkedin.com/in "estate sale" OR "estate liquidator" OR "probate specialist" Cincinnati OR Dayton OR Ohio',
 ];
 
 // ─── WATCHDOG-specific customer signals (must be a NEED or a professional profile) ─
@@ -327,6 +326,12 @@ const CUSTOMER_SIGNALS = [
   'tenant left', 'tenant moved', 'eviction', 'foreclosure', 'estate',
   'selling my house', 'preparing to sell', 'getting ready to list',
   'landlord', 'property manager', 'rental turnover', 'flip',
+  // Demo / contractor group signals
+  'demo', 'demolition', 'tear out', 'gut the', 'rip out',
+  'remove cabinets', 'remove flooring', 'remove tub', 'remove vanity',
+  'haul debris', 'construction debris', 'renovation debris',
+  'quote on a demo', 'need a quote', 'looking for a quote',
+  'if interested', 'dm me a price', 'send me a price',
 ];
 
 // ─── ALLOWED PLATFORMS — only these domains can produce leads ────────────────
@@ -386,6 +391,15 @@ function extractLead(result) {
   else if (url.includes('nextdoor'))  platform = 'Nextdoor';
   else if (url.includes('offerup'))   platform = 'OfferUp';
 
+  // Detect lead type for the badge
+  let leadType = 'Customer';
+  if (text.includes('demo') || text.includes('demolition') || text.includes('tear out') || text.includes('gut the') || text.includes('remove cabinets') || text.includes('remove flooring') || text.includes('construction debris') || text.includes('renovation debris') || text.includes('quote on a demo'))
+    leadType = 'Demo/Contractor';
+  else if (text.includes('estate') || text.includes('foreclosure') || text.includes('eviction') || text.includes('tenant left'))
+    leadType = 'Estate/Property';
+  else if (text.includes('moving') || text.includes('move out') || text.includes('moving out'))
+    leadType = 'Moving/Haul';
+
   return {
     _key:        key,
     name:        'Potential Customer',
@@ -397,6 +411,7 @@ function extractLead(result) {
     platform,
     hot:         !!(phone || email),
     title,
+    leadType,
     timestamp:   new Date().toISOString(),
     agentKey:    'leads',
   };
@@ -467,18 +482,37 @@ function extractWatchdogLead(result) {
   else if (text.includes('general contractor') || text.includes('remodeling') || text.includes('renovation') || text.includes('construction') || text.includes('demolition') || text.includes('roofing') || text.includes('plumber'))
     professionalType = 'General Contractor';
 
-  // For LinkedIn profiles, try to extract the person's name from the title
+  // Extract the person's name from title for direct outreach
+  // LinkedIn: "FirstName LastName - Title | LinkedIn"
+  // Facebook listing posts: often start with the agent's name or brokerage
   let displayName = professionalType;
   if (url.includes('linkedin.com/in/')) {
-    // LinkedIn titles are usually "FirstName LastName - Title | LinkedIn"
-    const nameMatch = title.match(/^([^-|]+)/);
+    const nameMatch = title.match(/^([^-|·]+)/);
+    if (nameMatch) displayName = nameMatch[1].trim();
+  } else if (url.includes('facebook.com')) {
+    // Facebook post titles often include the poster's name: "John Smith - Just listed..."
+    const nameMatch = title.match(/^([A-Z][a-z]+ [A-Z][a-z]+)/);
     if (nameMatch) displayName = nameMatch[1].trim();
   }
+
+  // Build a direct outreach note
+  const outreachNote = professionalType === 'Realtor/Agent'
+    ? `Contact ${displayName} about pre-listing cleanouts & estate hauls`
+    : professionalType === 'General Contractor'
+    ? `Contact ${displayName} about demo debris & construction cleanup partnership`
+    : professionalType === 'Landlord/PM'
+    ? `Contact ${displayName} about tenant turnover cleanouts`
+    : professionalType === 'House Flipper'
+    ? `Contact ${displayName} about demo/rehab debris removal`
+    : professionalType === 'Estate/Probate'
+    ? `Contact ${displayName} about post-sale estate cleanouts`
+    : `Contact ${displayName} about junk removal partnership`;
 
   return {
     _key:            key,
     name:            displayName,
     description:     snippet.substring(0, 200),
+    outreachNote,
     address:         location,
     phone:           phone || '',
     email:           email || '',
