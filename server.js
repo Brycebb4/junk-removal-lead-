@@ -25,8 +25,16 @@ const CRAIGSLIST_CITIES = [
   'cincinnati',
   'dayton',
   'lexington',
-  'columbus',
 ];
+
+// ─── MAX AGE FOR LEADS (hours) ────────────────────────────────────
+const MAX_LEAD_AGE_HOURS = 72; // Only show leads posted in the last 3 days
+
+function isTooOld(dateStr) {
+  const posted = new Date(dateStr).getTime();
+  const cutoff = Date.now() - MAX_LEAD_AGE_HOURS * 60 * 60 * 1000;
+  return posted < cutoff;
+}
 
 // ─── JUNK REMOVAL KEYWORDS ────────────────────────────────────────
 const LEAD_KEYWORDS = [
@@ -92,6 +100,7 @@ async function scanCraigslistCity(city, keywords, isWatchdog = false) {
           const combinedText = title + ' ' + desc;
 
           if (!containsKeyword(combinedText, isWatchdog ? keywords : LEAD_KEYWORDS)) continue;
+          if (isTooOld(pubDate)) continue; // Skip posts older than MAX_LEAD_AGE_HOURS
 
           const key = makeKey(`craigslist-${city}`, link);
           if (seenKeys.has(key)) continue;
@@ -125,7 +134,7 @@ async function scanCraigslistCity(city, keywords, isWatchdog = false) {
 
 // ─── REDDIT SCANNER ───────────────────────────────────────────────
 const REDDIT_SUBS = [
-  'cincinnati', 'Dayton', 'lexington', 'Columbus',
+  'cincinnati', 'Dayton', 'lexington',
   'northernkentucky', 'movingto', 'homeinspection',
 ];
 
@@ -152,6 +161,7 @@ async function scanReddit(keywords, isWatchdog = false) {
           const combinedText = title + ' ' + body;
 
           if (!containsKeyword(combinedText, isWatchdog ? keywords : LEAD_KEYWORDS)) continue;
+          if (isTooOld(new Date(post.created_utc * 1000))) continue; // Skip posts older than MAX_LEAD_AGE_HOURS
 
           const key = makeKey(`reddit-${sub}`, post.id);
           if (seenKeys.has(key)) continue;
