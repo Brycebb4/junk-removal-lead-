@@ -751,6 +751,31 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── DEBUG: run one query and show raw Serper results + filter decisions ──────
+app.get('/debug-scan', async (req, res) => {
+  const query = req.query.q || SEARCH_QUERIES[0];
+  const raw = await searchSerper(query);
+  const results = raw.map(r => {
+    const text = `${r.title} ${r.content}`.toLowerCase();
+    const url  = r.url || '';
+    const platformOk   = ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p));
+    const blockedDom   = BLOCKED_DOMAINS.find(d => url.toLowerCase().includes(d));
+    const bizSignal    = BUSINESS_SIGNALS.find(sig => text.includes(sig));
+    const bizRegex     = BUSINESS_REGEX_PATTERNS.find(rx => rx.test(text));
+    const irrelSignal  = IRRELEVANT_SIGNALS.find(sig => text.includes(sig));
+    const customerOk   = CUSTOMER_SIGNALS.some(sig => text.includes(sig));
+    let blockedReason  = null;
+    if (!platformOk)  blockedReason = `platform not allowed (url: ${url.substring(0,60)})`;
+    else if (blockedDom)  blockedReason = `blocked domain: ${blockedDom}`;
+    else if (bizSignal)   blockedReason = `business signal: "${bizSignal}"`;
+    else if (bizRegex)    blockedReason = `business regex matched`;
+    else if (irrelSignal) blockedReason = `irrelevant signal: "${irrelSignal}"`;
+    else if (!customerOk) blockedReason = `no customer signal found`;
+    return { title: r.title, url: r.url, snippet: r.content?.substring(0,120), blockedReason, passed: !blockedReason };
+  });
+  res.json({ query, totalRaw: raw.length, passed: results.filter(r=>r.passed).length, results });
+});
+
 // ─── Serve dashboard for any unmatched GET ───────────────────────────────────
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
