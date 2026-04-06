@@ -751,6 +751,26 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ─── DEBUG RAW: show exact Serper response for one query ─────────────────────
+app.get('/debug-raw', async (req, res) => {
+  const query = req.query.q || 'junk removal Cincinnati';
+  if (!SERPER_API_KEY) return res.json({ error: 'SERPER_API_KEY not set' });
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, num: 10, tbs: 'qdr:w' }),
+    });
+    const status = response.status;
+    const text = await response.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch { parsed = text; }
+    res.json({ httpStatus: status, query, response: parsed });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
 // ─── DEBUG: run one query and show raw Serper results + filter decisions ──────
 app.get('/debug-scan', async (req, res) => {
   const query = req.query.q || SEARCH_QUERIES[0];
