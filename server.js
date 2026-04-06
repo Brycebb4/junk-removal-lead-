@@ -199,7 +199,7 @@ async function searchSerper(query) {
         'X-API-KEY': SERPER_API_KEY,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ q: query, num: 10, tbs: 'qdr:d3' }),
+      body: JSON.stringify({ q: query, num: 10, tbs: 'qdr:w' }),
     });
     if (!response.ok) {
       console.error(`Serper error for "${query}":`, await response.text());
