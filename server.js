@@ -55,51 +55,25 @@ const LOCATIONS = [
 
 // ─── Search queries — COMMUNITY PLATFORMS ONLY (no Google organic) ───────────
 // Only Facebook groups, Craigslist, Reddit, Nextdoor — where REAL customers post.
-// Zero Google organic results (those are always businesses).
+// Kept to 8 high-yield queries to stay within Serper free-tier budget.
 const SEARCH_QUERIES = [
+  // Facebook Groups — direct junk removal / hauling asks
+  'site:facebook.com/groups "need junk removal" OR "need junk removed" OR "looking for junk removal" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
+  'site:facebook.com/groups "haul away" OR "need someone to haul" OR "clean out" Cincinnati OR Dayton OR Covington OR Florence',
+  'site:facebook.com/groups "getting rid of" OR "moving out" OR "need help moving" junk OR furniture OR stuff Cincinnati OR Dayton OR Ohio',
+  'site:facebook.com/groups "estate cleanout" OR "tenant left" OR "selling my house" OR "foreclosure" junk OR cleanout OR haul Cincinnati OR Dayton',
 
-  // === FACEBOOK GROUPS — junk removal requests ===
-  'site:facebook.com/groups "need junk removal" Cincinnati OR Dayton OR Ohio OR Kentucky',
-  'site:facebook.com/groups "anyone recommend" junk removal Cincinnati OR Dayton',
-  'site:facebook.com/groups "anyone know" junk removal Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com/groups "looking for junk removal" Cincinnati OR Dayton OR Covington OR Florence',
-  'site:facebook.com/groups "need someone to haul" Cincinnati OR Dayton OR Ohio',
-  'site:facebook.com/groups "need junk removed" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com/groups "who does junk removal" Cincinnati OR Dayton',
-  'site:facebook.com/groups "junk removal" "any recommendations" Cincinnati OR Dayton OR Ohio',
+  // Craigslist — customer requests
+  'site:craigslist.org "junk removal" OR "haul away" OR "clean out" OR "free pickup" Cincinnati OR Dayton OR Kentucky OR Lexington',
 
-  // === FACEBOOK GROUPS — hauling / moving / U-Haul requests ===
-  'site:facebook.com/groups "need help moving" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com/groups "haul away" Cincinnati OR Dayton OR Covington "need" OR "looking"',
-  'site:facebook.com/groups "moving out" "need help" Cincinnati OR Dayton OR Ohio',
-  'site:facebook.com/groups "need a truck" OR "need a trailer" Cincinnati OR Dayton haul OR move',
-  'site:facebook.com/groups "U-Haul" OR "Uhaul" Cincinnati OR Dayton "help" OR "need"',
-  'site:facebook.com/groups "getting rid of" furniture OR junk OR stuff Cincinnati OR Dayton',
-  'site:facebook.com/groups "clean out" "my garage" OR "my basement" OR "my attic" Cincinnati OR Dayton',
+  // Reddit — asking for recommendations
+  'site:reddit.com "junk removal" OR "haul away" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky" recommend OR need OR looking',
 
-  // === FACEBOOK GROUPS — real estate / property cleanout requests ===
-  'site:facebook.com/groups "tenant left" junk OR trash OR cleanout Cincinnati OR Dayton',
-  'site:facebook.com/groups "estate cleanout" OR "estate clean out" Cincinnati OR Dayton',
-  'site:facebook.com/groups "foreclosure" cleanout OR cleanup Cincinnati OR Dayton OR Ohio',
-  'site:facebook.com/groups "landlord" "clean out" OR "junk removal" Cincinnati OR Dayton',
-  'site:facebook.com/groups "selling my house" junk OR cleanout OR haul Cincinnati OR Dayton',
+  // Nextdoor — neighborhood asks
+  'site:nextdoor.com "junk removal" OR "haul away" OR "cleanout" Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // === CRAIGSLIST — wanted section / people requesting services ===
-  'site:craigslist.org "need junk removal" Cincinnati OR Dayton OR Ohio',
-  'site:craigslist.org "need junk removed" Cincinnati OR Dayton OR Kentucky',
-  'site:craigslist.org "haul away" "need" OR "looking for" Cincinnati OR Dayton',
-  'site:craigslist.org "clean out" "need" OR "help" Cincinnati OR Dayton',
-  'site:craigslist.org "free" "come pick up" OR "must pick up" Cincinnati OR Dayton furniture OR junk',
-
-  // === REDDIT — people asking for recommendations ===
-  'site:reddit.com "junk removal" Cincinnati OR Dayton recommend OR recommendation OR suggestions',
-  'site:reddit.com "haul away" OR "hauling" Cincinnati OR Dayton "need" OR "looking for" OR "help"',
-  'site:reddit.com "moving" Cincinnati OR Dayton "junk" OR "get rid of" OR "cleanout"',
-
-  // === NEXTDOOR — neighborhood requests ===
-  'site:nextdoor.com "junk removal" Cincinnati OR Dayton recommend OR "need" OR "looking for"',
-  'site:nextdoor.com "haul away" OR "hauling" Cincinnati OR Dayton',
-  'site:nextdoor.com "clean out" OR "cleanout" Cincinnati OR Dayton "need" OR "help"',
+  // Broad fallback across all platforms
+  '"need junk removal" OR "need junk removed" OR "haul away my" Cincinnati OR Dayton OR Covington OR Florence OR Lexington site:facebook.com OR site:reddit.com OR site:nextdoor.com OR site:craigslist.org',
 ];
 
 // ─── NETWORK WATCHDOG — track realtors, property managers, estate pros, etc. ─
@@ -121,53 +95,25 @@ const WATCHDOG_PROFILES = [
   'home inspector', 'closing agent', 'title company',
 ];
 
+// Kept to 6 high-yield queries to stay within Serper free-tier budget.
 const WATCHDOG_QUERIES = [
-  // === REALTORS needing cleanout before listing ===
-  'site:facebook.com/groups realtor OR "real estate agent" "cleanout" OR "junk removal" OR "haul away" Cincinnati OR Dayton OR Ohio',
-  'site:facebook.com/groups "pre-listing" OR "getting listed" cleanout OR "junk removal" Cincinnati OR Dayton',
-  'site:facebook.com/groups realtor OR agent "need someone to clean out" OR "need junk removed" Cincinnati OR Dayton',
-  'site:facebook.com/groups "listing this house" OR "listing this property" junk OR cleanout OR haul Cincinnati OR Dayton',
+  // Facebook — landlords / property managers with turnover needs
+  'site:facebook.com/groups landlord OR "property manager" "tenant left" OR "eviction" OR "rental turnover" cleanout OR junk OR haul Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // === PROPERTY MANAGERS / LANDLORDS with tenant turnovers ===
-  'site:facebook.com/groups landlord OR "property manager" "tenant left" OR "moved out" OR "eviction" junk OR trash OR cleanout Cincinnati OR Dayton',
-  'site:facebook.com/groups "rental property" OR "rental unit" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
-  'site:facebook.com/groups landlord "clean out" OR "trash out" OR "debris" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:facebook.com/groups "tenant trashed" OR "tenant destroyed" OR "tenant abandoned" Cincinnati OR Dayton',
+  // Facebook — realtors / estate needing cleanout
+  'site:facebook.com/groups realtor OR "real estate" OR "estate sale" OR "probate" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
 
-  // === ESTATE SALES / PROBATE — leftovers after sale ===
-  'site:facebook.com/groups "estate sale" "leftovers" OR "what\'s left" OR "haul away" OR "cleanout" Cincinnati OR Dayton',
-  'site:facebook.com/groups "estate cleanout" OR "estate clean out" Cincinnati OR Dayton OR Ohio "need" OR "looking"',
-  'site:facebook.com/groups "probate" OR "inherited house" cleanout OR junk OR "haul away" Cincinnati OR Dayton',
-  'site:facebook.com/groups "deceased" OR "passed away" house OR property cleanout OR junk Cincinnati OR Dayton',
+  // Facebook — flippers / rehabs
+  'site:facebook.com/groups "house flip" OR "fixer upper" OR "rehab" cleanout OR debris OR junk Cincinnati OR Dayton OR Ohio',
 
-  // === HOME FLIPPERS needing demo/cleanout ===
-  'site:facebook.com/groups "house flip" OR "home flip" OR "flipping" cleanout OR "junk removal" OR demolition Cincinnati OR Dayton',
-  'site:facebook.com/groups "rehab property" OR "fixer upper" cleanout OR "haul away" OR debris Cincinnati OR Dayton',
+  // Craigslist — professional referrals
+  'site:craigslist.org landlord OR realtor OR "property manager" OR "estate sale" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton OR Lexington',
 
-  // === CRAIGSLIST — professional referral posts ===
-  'site:craigslist.org realtor OR landlord OR "property manager" cleanout OR "junk removal" Cincinnati OR Dayton',
-  'site:craigslist.org "estate sale" leftovers OR cleanout OR "haul away" Cincinnati OR Dayton',
-  'site:craigslist.org "tenant left" OR "eviction" cleanout OR junk Cincinnati OR Dayton',
+  // Reddit — professionals asking
+  'site:reddit.com landlord OR realtor OR "property manager" OR "estate sale" "junk removal" OR cleanout Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // === REDDIT — professional referral posts ===
-  'site:reddit.com realtor OR landlord OR "property manager" "junk removal" OR cleanout Cincinnati OR Dayton',
-  'site:reddit.com "estate sale" OR "estate cleanout" Cincinnati OR Dayton "need" OR "recommend"',
-
-  // === NEXTDOOR — professional referral posts ===
-  'site:nextdoor.com realtor OR landlord "junk removal" OR cleanout OR "haul away" Cincinnati OR Dayton',
-  'site:nextdoor.com "estate sale" OR "estate cleanout" OR "tenant left" Cincinnati OR Dayton',
-
-  // === LINKEDIN — find realtors, property managers, estate pros directly ===
-  'site:linkedin.com/in realtor OR "real estate agent" Cincinnati OR Dayton "cleanout" OR "junk removal"',
-  'site:linkedin.com/in "property manager" Cincinnati OR Dayton OR Ohio',
-  'site:linkedin.com/in "real estate agent" Cincinnati OR Dayton OR "Northern Kentucky"',
-  'site:linkedin.com/in realtor Cincinnati OR Dayton "property" OR "listing" OR "homes"',
-  'site:linkedin.com/in "estate sale" OR "estate liquidator" Cincinnati OR Dayton OR Ohio',
-  'site:linkedin.com/in "property management" Cincinnati OR Dayton OR Ohio',
-  'site:linkedin.com/in "probate attorney" OR "probate lawyer" Cincinnati OR Dayton',
-  'site:linkedin.com/in "house flipper" OR "real estate investor" Cincinnati OR Dayton',
-  'site:linkedin.com/posts realtor OR "real estate" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
-  'site:linkedin.com/posts "property manager" OR landlord cleanout OR junk Cincinnati OR Dayton',
+  // LinkedIn — find referral pros directly
+  'site:linkedin.com realtor OR "property manager" OR "estate liquidator" OR landlord Cincinnati OR Dayton OR "Northern Kentucky" cleanout OR "junk removal"',
 ];
 
 // ─── WATCHDOG-specific customer signals (must be a NEED or a professional profile) ─
@@ -637,13 +583,14 @@ function reclassifyTemperatures() {
   io.emit('leadsUpdated', leadsData);
 }
 
-// ─── Auto-scan every 30 min (6am–11pm) — catch leads FAST ──────────────────
-// Lead Scanner runs at :00, Watchdog runs at :15 (staggered to spread API usage)
-cron.schedule('0,30 6-23 * * *', () => {
+// ─── Auto-scan 4× per day (7am, 11am, 3pm, 7pm) ─────────────────────────────
+// 8 Lead + 6 Watchdog = 14 queries × 4 scans × 30 days = ~1,680 Serper calls/mo
+// Comfortably fits within the 2,500/mo free tier.
+cron.schedule('0 7,11,15,19 * * *', () => {
   console.log('Cron: Lead Scanner triggered');
   runScan().catch(console.error);
 });
-cron.schedule('15,45 6-23 * * *', () => {
+cron.schedule('30 7,11,15,19 * * *', () => {
   console.log('Cron: Network Watchdog triggered');
   runWatchdogScan().catch(console.error);
 });
