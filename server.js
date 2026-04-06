@@ -10,7 +10,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(__dirname));
 
 // ─── IN-MEMORY LEAD STORE ─────────────────────────────────────────
 let leadsDB = { leads: [], watchdog: [], manual: [] };
@@ -299,6 +299,11 @@ app.delete('/api/leads', (req, res) => {
   seenKeys.clear();
   io.emit('leadsUpdated', leadsDB);
   res.json({ success: true });
+});
+
+// ─── Serve dashboard for any unmatched GET ───────────────────────
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ─── START SERVER ─────────────────────────────────────────────────
