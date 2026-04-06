@@ -96,25 +96,42 @@ const WATCHDOG_PROFILES = [
   'home inspector', 'closing agent', 'title company',
 ];
 
-// Kept to 6 high-yield queries to stay within Serper free-tier budget.
+// ─── NETWORK WATCHDOG QUERIES ────────────────────────────────────────────────
+// Goal: Find contractor/realtor PROFILES & PAGES — people to contact directly
+// for ongoing referral relationships, not one-off customer posts.
 const WATCHDOG_QUERIES = [
-  // Facebook — landlords / property managers with turnover needs
-  'site:facebook.com/groups landlord OR "property manager" "tenant left" OR "eviction" OR "rental turnover" cleanout OR junk OR haul Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // Facebook — realtors / estate needing cleanout
-  'site:facebook.com/groups realtor OR "real estate" OR "estate sale" OR "probate" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton',
+  // === REALTORS — Facebook profiles & pages in service area ===
+  'site:facebook.com realtor OR "real estate agent" OR "listing agent" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington OR Florence OR Lexington',
+  'site:facebook.com "RE/MAX" OR "Keller Williams" OR "Coldwell Banker" OR "eXp Realty" agent Cincinnati OR Dayton OR "Northern Kentucky"',
 
-  // Facebook — flippers / rehabs
-  'site:facebook.com/groups "house flip" OR "fixer upper" OR "rehab" cleanout OR debris OR junk Cincinnati OR Dayton OR Ohio',
+  // === PROPERTY MANAGERS & LANDLORDS — Facebook groups & pages ===
+  'site:facebook.com "property management" OR "property manager" OR landlord Cincinnati OR Dayton OR "Northern Kentucky" OR Florence OR Covington',
 
-  // Craigslist — professional referrals
-  'site:craigslist.org landlord OR realtor OR "property manager" OR "estate sale" cleanout OR "junk removal" OR "haul away" Cincinnati OR Dayton OR Lexington',
+  // === GENERAL CONTRACTORS — remodelers, roofers, plumbers (always have demo debris) ===
+  'site:facebook.com "general contractor" OR "home remodeling" OR "kitchen remodel" OR "bathroom remodel" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:facebook.com "roofing contractor" OR "roofing company" OR "roofer" Cincinnati OR Dayton OR "Northern Kentucky" OR Covington',
+  'site:facebook.com/groups "general contractor" OR "contractor" demo OR demolition OR "clean up" OR debris Cincinnati OR Dayton OR Ohio',
 
-  // Reddit — professionals asking
-  'site:reddit.com landlord OR realtor OR "property manager" OR "estate sale" "junk removal" OR cleanout Cincinnati OR Dayton OR "Northern Kentucky"',
+  // === ESTATE SALE COMPANIES — find the companies directly ===
+  'site:facebook.com "estate sale" OR "estate liquidation" OR "estate services" Cincinnati OR Dayton OR "Northern Kentucky" OR Lexington',
 
-  // LinkedIn — find referral pros directly
-  'site:linkedin.com realtor OR "property manager" OR "estate liquidator" OR landlord Cincinnati OR Dayton OR "Northern Kentucky" cleanout OR "junk removal"',
+  // === HOUSE FLIPPERS & INVESTORS — active in the area ===
+  'site:facebook.com/groups "house flip" OR "wholesaler" OR "real estate investor" Cincinnati OR Dayton OR Ohio "looking for" OR "need" OR "want"',
+
+  // === LINKEDIN — professional profiles to reach out to directly ===
+  'site:linkedin.com/in realtor OR "real estate agent" OR "listing agent" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:linkedin.com/in "property manager" OR "property management" Cincinnati OR Dayton OR Ohio',
+  'site:linkedin.com/in "general contractor" OR "home remodeling" OR "construction" Cincinnati OR Dayton OR "Northern Kentucky"',
+  'site:linkedin.com/in "estate sale" OR "estate liquidator" OR "probate" Cincinnati OR Dayton OR Ohio',
+  'site:linkedin.com/in "house flipper" OR "real estate investor" OR "wholesaler" Cincinnati OR Dayton OR Ohio',
+
+  // === NEXTDOOR — contractor & realtor business profiles ===
+  'site:nextdoor.com realtor OR "real estate" OR "property management" OR "general contractor" Cincinnati OR Dayton OR "Northern Kentucky"',
+
+  // === CRAIGSLIST — contractors posting their own services (reach out to partner) ===
+  'site:craigslist.org "general contractor" OR "remodeling" OR "renovation" Cincinnati OR Dayton OR Kentucky',
+  'site:craigslist.org realtor OR "property management" OR "estate sale" Cincinnati OR Dayton OR Lexington',
 ];
 
 // ─── WATCHDOG-specific customer signals (must be a NEED or a professional profile) ─
@@ -385,7 +402,7 @@ function extractLead(result) {
   };
 }
 
-// ─── Extract a WATCHDOG lead (from professional network posts) ──────────────
+// ─── Extract a WATCHDOG lead (contractor/realtor profiles to contact directly) ─
 function extractWatchdogLead(result) {
   const text  = `${result.title || ''} ${result.content || ''}`.toLowerCase();
   const url   = result.url || '';
@@ -395,27 +412,32 @@ function extractWatchdogLead(result) {
   // 0. Must be from allowed platform (includes LinkedIn for watchdog)
   if (!WATCHDOG_ALLOWED_PLATFORMS.some(p => url.toLowerCase().includes(p))) return null;
 
-  // 1. Block known business/directory domains
-  if (BLOCKED_DOMAINS.some(d => url.toLowerCase().includes(d))) return null;
+  // 1. Block known junk removal competitor domains only (not general business signals)
+  const COMPETITOR_DOMAINS = ['1800gotjunk.com','junk-king.com','collegehunks.com','loadup.com','junkluggers.com','junkremoval.com','gotjunk.com','jdog.com'];
+  if (COMPETITOR_DOMAINS.some(d => url.toLowerCase().includes(d))) return null;
 
-  // 2. Block business ads (same filter)
-  if (BUSINESS_SIGNALS.some(sig => text.includes(sig))) return null;
-
-  // 2b. Block regex business patterns
-  if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(text))) return null;
-
-  // 2c. Block irrelevant topics
+  // 2. Block irrelevant topics only
   if (IRRELEVANT_SIGNALS.some(sig => text.includes(sig))) return null;
 
-  // 3. Must contain at least one watchdog customer signal
-  if (!WATCHDOG_CUSTOMER_SIGNALS.some(sig => text.includes(sig))) return null;
+  // 3. Must look like a professional/contractor profile or post
+  const PROFESSIONAL_SIGNALS = [
+    'realtor', 'real estate agent', 'real estate', 'listing agent', 'broker', 're/max', 'keller williams',
+    'coldwell banker', 'exp realty', 'century 21', 'howard hanna',
+    'property manager', 'property management', 'landlord', 'rental property',
+    'general contractor', 'home remodeling', 'remodeling', 'renovation', 'kitchen remodel',
+    'bathroom remodel', 'roofing', 'roofer', 'plumber', 'electrician', 'contractor',
+    'estate sale', 'estate liquidat', 'probate', 'estate services',
+    'house flipper', 'house flip', 'real estate investor', 'wholesaler', 'fixer upper', 'rehab',
+    'construction', 'demolition', 'demo',
+  ];
+  if (!PROFESSIONAL_SIGNALS.some(sig => text.includes(sig))) return null;
 
   // 4. Deduplicate
   const key = url || title.substring(0, 60);
   if (seenLeadKeys.has(key)) return null;
   seenLeadKeys.add(key);
 
-  // Extract contact info
+  // Extract contact info (phone & email from their profile/post)
   const phoneMatch = text.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
   const emailMatch = text.match(/[\w.+-]+@[\w-]+\.[a-z]{2,}/i);
   const phone = phoneMatch ? phoneMatch[1] : null;
@@ -426,22 +448,24 @@ function extractWatchdogLead(result) {
 
   // Platform label
   let platform = 'Google';
-  if (url.includes('facebook'))       platform = 'Facebook';
-  else if (url.includes('reddit'))    platform = 'Reddit';
+  if (url.includes('facebook'))        platform = 'Facebook';
+  else if (url.includes('reddit'))     platform = 'Reddit';
   else if (url.includes('craigslist')) platform = 'Craigslist';
-  else if (url.includes('nextdoor'))  platform = 'Nextdoor';
-  else if (url.includes('linkedin'))  platform = 'LinkedIn';
+  else if (url.includes('nextdoor'))   platform = 'Nextdoor';
+  else if (url.includes('linkedin'))   platform = 'LinkedIn';
 
-  // Detect the professional type
-  let professionalType = 'Professional';
-  if (text.includes('realtor') || text.includes('real estate agent') || text.includes('real estate') || text.includes('listing agent') || text.includes('broker'))
+  // Detect professional type for the badge
+  let professionalType = 'Contractor';
+  if (text.includes('realtor') || text.includes('real estate agent') || text.includes('real estate') || text.includes('listing agent') || text.includes('broker') || text.includes('re/max') || text.includes('keller williams') || text.includes('coldwell banker'))
     professionalType = 'Realtor/Agent';
-  else if (text.includes('landlord') || text.includes('property manager') || text.includes('property management') || text.includes('tenant'))
+  else if (text.includes('landlord') || text.includes('property manager') || text.includes('property management'))
     professionalType = 'Landlord/PM';
-  else if (text.includes('estate sale') || text.includes('estate liquidat') || text.includes('probate') || text.includes('deceased') || text.includes('inherited'))
+  else if (text.includes('estate sale') || text.includes('estate liquidat') || text.includes('probate'))
     professionalType = 'Estate/Probate';
-  else if (text.includes('flip') || text.includes('rehab') || text.includes('fixer') || text.includes('investor'))
+  else if (text.includes('house flip') || text.includes('real estate investor') || text.includes('wholesaler') || text.includes('fixer upper') || text.includes('rehab'))
     professionalType = 'House Flipper';
+  else if (text.includes('general contractor') || text.includes('remodeling') || text.includes('renovation') || text.includes('construction') || text.includes('demolition') || text.includes('roofing') || text.includes('plumber'))
+    professionalType = 'General Contractor';
 
   // For LinkedIn profiles, try to extract the person's name from the title
   let displayName = professionalType;
@@ -546,17 +570,32 @@ async function runScan() {
   return { totalNew: newLeads.length, leads: newLeads };
 }
 
+// ─── Serper search for Watchdog (no time filter — profiles don't expire) ─────
+async function searchSerperWatchdog(query) {
+  if (!SERPER_API_KEY) { console.warn('SERPER_API_KEY not set'); return []; }
+  try {
+    const response = await fetch('https://google.serper.dev/search', {
+      method: 'POST',
+      headers: { 'X-API-KEY': SERPER_API_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, num: 10 }), // no tbs — profiles are evergreen
+    });
+    if (!response.ok) { console.error(`Serper watchdog error:`, await response.text()); return []; }
+    const data = await response.json();
+    return (data.organic || []).map(r => ({ title: r.title || '', url: r.link || '', content: r.snippet || '' }));
+  } catch (e) { console.error('Serper watchdog error:', e.message); return []; }
+}
+
 // ─── Network Watchdog scan ──────────────────────────────────────────────────
 async function runWatchdogScan() {
   console.log(`[${new Date().toLocaleTimeString()}] Starting Network Watchdog (${WATCHDOG_QUERIES.length} queries)...`);
   const newLeads = [];
 
   for (const query of WATCHDOG_QUERIES) {
-    const results = await searchSerper(query);
+    const results = await searchSerperWatchdog(query);
     for (const result of results) {
       const lead = extractWatchdogLead(result);
       if (lead) {
-        lead.temperature = 'hot'; // just found = hot
+        lead.temperature = 'hot';
         newLeads.push(lead);
       }
     }
