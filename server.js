@@ -6,6 +6,7 @@ const path = require('path');
 const { Server } = require('socket.io');
 const fs = require('fs');
 const cron = require('node-cron');
+const { parseStringPromise } = require('xml2js');
 
 const app = express();
 const server = http.createServer(app);
@@ -512,20 +513,25 @@ function classifyLeadTemp(lead) {
 
 // ─── Core Lead Scanner scan ─────────────────────────────────────────────────
 async function runScan() {
-  console.log(`[${new Date().toLocaleTimeString()}] Starting Lead Scanner (${SEARCH_QUERIES.length} queries)...`);
+  console.log(`[${new Date().toLocaleTimeString()}] Starting Lead Scanner (${SEARCH_QUERIES.length} queries + Reddit RSS)...`);
   const newLeads = [];
 
+  // 1. Serper/Google search (paid — skipped if no credits)
   for (const query of SEARCH_QUERIES) {
     const results = await searchSerper(query);
     for (const result of results) {
       const lead = extractLead(result);
       if (lead) {
-        lead.temperature = 'hot'; // just found = hot
+        lead.temperature = 'hot';
         newLeads.push(lead);
       }
     }
     await new Promise(r => setTimeout(r, 300));
   }
+
+  // 2. Reddit RSS (free — always runs regardless of Serper credits)
+  const rssLeads = await scanRedditRSS();
+  newLeads.push(...rssLeads);
 
   if (newLeads.length) {
     leadsData.leads = [...newLeads, ...leadsData.leads].slice(0, 200);
@@ -583,16 +589,29 @@ function reclassifyTemperatures() {
   io.emit('leadsUpdated', leadsData);
 }
 
-// ─── Auto-scan 4× per day (7am, 11am, 3pm, 7pm) ─────────────────────────────
-// 8 Lead + 6 Watchdog = 14 queries × 4 scans × 30 days = ~1,680 Serper calls/mo
-// Comfortably fits within the 2,500/mo free tier.
+// ─── Auto-scan schedule ───────────────────────────────────────────────────────
+// Serper (paid): 4× per day — 14 queries × 4 × 30 days = ~1,680 calls/mo (fits free tier)
+// Reddit RSS (free): every hour 7am–10pm — no cost, catches fresh posts fast
 cron.schedule('0 7,11,15,19 * * *', () => {
-  console.log('Cron: Lead Scanner triggered');
+  console.log('Cron: Lead Scanner (Serper + Reddit RSS) triggered');
   runScan().catch(console.error);
 });
 cron.schedule('30 7,11,15,19 * * *', () => {
   console.log('Cron: Network Watchdog triggered');
   runWatchdogScan().catch(console.error);
+});
+
+// Reddit RSS-only scan every hour between Serper scans (free, catches real-time posts)
+cron.schedule('0 8,9,10,12,13,14,16,17,18,20,21,22 * * *', () => {
+  console.log('Cron: Reddit RSS scan triggered');
+  scanRedditRSS().then(leads => {
+    if (leads.length) {
+      leadsData.leads = [...leads, ...leadsData.leads].slice(0, 200);
+      saveData();
+      io.emit('leadsUpdated', leadsData);
+      sendEmailAlert(leads).catch(console.error);
+    }
+  }).catch(console.error);
 });
 
 // Reclassify temperatures every hour
@@ -690,12 +709,133 @@ app.get('/health', (req, res) => {
     status: 'ok',
     serperConfigured: !!SERPER_API_KEY,
     resendConfigured: !!RESEND_API_KEY,
+    webhookSecured: !!WEBHOOK_SECRET,
+    webhookUrl: '/api/webhook',
+    redditRssSubreddits: REDDIT_SUBS,
     leadsCount: leadsData.leads.length + leadsData.watchdog.length + leadsData.manual.length,
     watchdogCount: leadsData.watchdog.length,
     seenKeys: seenLeadKeys.size,
     queryCount: SEARCH_QUERIES.length + WATCHDOG_QUERIES.length,
     time: new Date().toISOString(),
   });
+});
+
+// ─── FREE REDDIT RSS SCANNER ─────────────────────────────────────────────────
+// Runs alongside Serper — no API key needed, real-time posts sorted by new.
+const REDDIT_SUBS   = ['cincinnati', 'Dayton', 'northernkentucky', 'lexington', 'RealEstate', 'FirstTimeHomeBuyer'];
+const REDDIT_TERMS  = ['junk removal', 'haul away', 'junk removed', 'cleanout', 'clean out', 'haul away', 'furniture removal', 'estate cleanout', 'tenant left', 'junk pickup'];
+const MAX_POST_AGE_HOURS = 72;
+
+async function scanRedditRSS() {
+  const newLeads = [];
+  for (const sub of REDDIT_SUBS) {
+    const url = `https://www.reddit.com/r/${sub}/new.rss`;
+    try {
+      const res = await fetch(url, {
+        headers: { 'User-Agent': 'JunkBoysRemoval-LeadBot/1.0' },
+        timeout: 8000,
+      });
+      if (!res.ok) continue;
+      const xml  = await res.text();
+      const data = await parseStringPromise(xml, { explicitArray: false });
+      const entries = data?.feed?.entry;
+      if (!entries) continue;
+      const list = Array.isArray(entries) ? entries : [entries];
+
+      for (const entry of list) {
+        const title   = entry.title?._  || entry.title  || '';
+        const content = entry.content?._|| entry.summary?._ || entry.summary || '';
+        const link    = entry.link?.$.href || entry.link || '';
+        const pubDate = entry.updated || entry.published || new Date().toISOString();
+        const combined = (title + ' ' + content).toLowerCase();
+
+        // Age filter
+        const ageHours = (Date.now() - new Date(pubDate).getTime()) / 3600000;
+        if (ageHours > MAX_POST_AGE_HOURS) continue;
+
+        // Must contain a junk removal keyword
+        if (!REDDIT_TERMS.some(t => combined.includes(t))) continue;
+
+        // Skip business posts
+        if (BUSINESS_SIGNALS.some(sig => combined.includes(sig))) continue;
+        if (BUSINESS_REGEX_PATTERNS.some(rx => rx.test(combined))) continue;
+
+        const key = `reddit-rss-${link}`;
+        if (seenLeadKeys.has(key)) continue;
+        seenLeadKeys.add(key);
+
+        const location = LOCATIONS.find(loc => combined.includes(loc.toLowerCase())) || 'Cincinnati Area';
+        const phoneMatch = combined.match(/(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})/);
+
+        newLeads.push({
+          _key:        key,
+          name:        'Reddit User',
+          title:       title.substring(0, 120),
+          description: content.replace(/<[^>]+>/g, '').substring(0, 250),
+          address:     location,
+          phone:       phoneMatch ? phoneMatch[1] : '',
+          email:       '',
+          source:      link,
+          platform:    `Reddit r/${sub}`,
+          temperature: ageHours <= 6 ? 'hot' : 'cold',
+          hot:         ageHours <= 6,
+          timestamp:   new Date(pubDate).toISOString(),
+          agentKey:    'leads',
+          sourceType:  'reddit-rss',
+        });
+      }
+    } catch (e) {
+      console.log(`Reddit RSS skip r/${sub}: ${e.message}`);
+    }
+    await new Promise(r => setTimeout(r, 500));
+  }
+  console.log(`[Reddit RSS] Found ${newLeads.length} new leads`);
+  return newLeads;
+}
+
+// ─── ZAPIER / IFTTT / GOOGLE ALERTS WEBHOOK ──────────────────────────────────
+// Point your Zapier/IFTTT action to POST https://your-render-url/api/webhook
+// Include a WEBHOOK_SECRET env var on Render and set the same value in Zapier
+// for security (optional but recommended).
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || null;
+
+app.post('/api/webhook', (req, res) => {
+  // Optional secret check
+  const incoming = req.headers['x-webhook-secret'] || req.body.secret;
+  if (WEBHOOK_SECRET && incoming !== WEBHOOK_SECRET) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { title, description, url, platform, phone, email, location, name } = req.body;
+  if (!title && !description) {
+    return res.status(400).json({ error: 'title or description required' });
+  }
+
+  const key = `webhook-${url || title}-${Date.now()}`;
+  const lead = {
+    _key:        key,
+    name:        name        || 'Webhook Lead',
+    title:       (title      || description || '').substring(0, 120),
+    description: (description|| title       || '').substring(0, 300),
+    address:     location    || 'Cincinnati Area',
+    phone:       phone       || '',
+    email:       email       || '',
+    source:      url         || '',
+    platform:    platform    || 'Zapier/IFTTT',
+    temperature: 'hot',
+    hot:         true,
+    timestamp:   new Date().toISOString(),
+    agentKey:    'leads',
+    sourceType:  'webhook',
+  };
+
+  seenLeadKeys.add(key);
+  leadsData.leads.unshift(lead);
+  if (leadsData.leads.length > 200) leadsData.leads = leadsData.leads.slice(0, 200);
+  saveData();
+  io.emit('leadsUpdated', leadsData);
+  console.log(`[Webhook] New lead received: ${lead.title}`);
+  res.json({ success: true, lead });
 });
 
 // ─── DEBUG RAW: show exact Serper response for one query ─────────────────────
